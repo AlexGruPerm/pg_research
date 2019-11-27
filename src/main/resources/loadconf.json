@@ -1,0 +1,15 @@
+{
+  "items": [
+      {
+        "num":"1",
+        "name":"Комбик ГРБС",
+        "proc":"prm_salary.pkg_web_cons_rep_grbs_list"
+      },
+      {
+        "num":"2",
+        "name":"Комбик ГУ",
+        "proc":"prm_salary.pkg_web_cons_rep_institution_list"
+      }
+  ]
+}
+
