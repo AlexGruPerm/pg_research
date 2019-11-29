@@ -1,6 +1,6 @@
 package loadconf
 
-import common.{PgConnectProp, PgLoadConf}
+import common.{PgConnectProp, PgLoadConf, PgRunProp}
 import io.circe._
 import io.circe.parser._
 import zio.Task
@@ -34,6 +34,14 @@ object PgLoadConfParser {
     } yield PgConnectProp(driver,url,username,password)
   }
 
+  implicit val decoder3: Decoder[PgRunProp] = Decoder.instance { h =>
+    for {
+      runAs <- h.get[String]("runAs")
+      repeat <- h.get[Int]("repeat")
+    } yield PgRunProp(runAs,repeat)
+  }
+
+
   //todo: next 2 function look like boilerplate, eliminate it with replacing in one common func.
 
   /**
@@ -60,6 +68,18 @@ object PgLoadConfParser {
       case Left (failure) => Task.fail (new Exception (s"Invalid json in input file. $failure"))
       case Right (json) => {
         json.hcursor.downField("db").as[PgConnectProp].swap match {
+          case   Left(sq) => Task.succeed(sq)
+          case   Right(failure) =>  Task.fail (new Exception (s"Invalid json in input file. $failure"))
+        }
+      }
+    }
+  }
+
+  val parseRunProps :String => Task[PgRunProp] = fileStringCont => {
+    parse(fileStringCont) match {
+      case Left (failure) => Task.fail (new Exception (s"Invalid json in input file. $failure"))
+      case Right (json) => {
+        json.hcursor.downField("runprops").as[PgRunProp].swap match {
           case   Left(sq) => Task.succeed(sq)
           case   Right(failure) =>  Task.fail (new Exception (s"Invalid json in input file. $failure"))
         }

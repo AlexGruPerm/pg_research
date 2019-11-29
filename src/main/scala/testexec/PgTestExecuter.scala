@@ -1,16 +1,21 @@
 package testexec
-import java.sql.{Connection, Types}
+import java.sql.Types
 
 import common.{PgLoadConf, PgTestResult}
+import dbconn.pgSess
 import org.postgresql.jdbc.PgResultSet
 import zio._
 
+/**
+ *   https://www.programcreek.com/scala/java.sql.ResultSet
+*/
 object PgTestExecuter {
 
-  val exec :(Connection,PgLoadConf) => Task[PgTestResult] = (con,lc) => {
+  val exec :(pgSess,PgLoadConf) => Task[PgTestResult] = (conPg,lc) => {
     /**
     * prm_salary.pkg_web_cons_rep_grbs_list( refcur => 'cursor_unq_name', p_user_id => 45224506);
     */
+    val con = conPg.sess
     val tBegin = System.currentTimeMillis
     con.setAutoCommit(false)
 
@@ -38,7 +43,10 @@ object PgTestExecuter {
     val rowsCnt = results.size
     val tFetch = System.currentTimeMillis
 
-    Task(PgTestResult(lc,
+    Task(PgTestResult(
+      conPg.pid,
+      lc,
+      startTs = tBegin,
       cursorColumns = columns,
       durExecMs = tExec - tBegin,
       durFetchMs = tFetch - tExec,

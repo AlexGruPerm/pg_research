@@ -14,10 +14,19 @@ case class PgTestResultAgr(sqPgTestResult :Seq[PgTestResult]){
     sq.sum/sq.size
   }
 
+  def avgTotalDur(testNum :Int) :Double = {
+    val sq = sqPgTestResult.collect{case tr if tr.loadConf.testNum==testNum => tr.durTotalMs}
+    sq.sum/sq.size
+  }
+
+  def runCount(testNum :Int) :Int =
+    sqPgTestResult.collect{case tr if tr.loadConf.testNum==testNum => tr.durExecMs}.size
+
   override def toString: String =
     s" TotalDuration (e,f,t) = ($sumExecDur  $sumFetchDur  $sumTotalDur) "
 
   def getAgrStats :Unit =
-    sqPgTestResult.map(tr => tr.loadConf.testNum).distinct.map(tnum => (tnum,avgExecDur(tnum))).foreach(println)
+    sqPgTestResult.map(tr => tr.loadConf.testNum).distinct.map(tnum => (tnum,runCount(tnum),avgExecDur(tnum),avgTotalDur(tnum)))
+      .foreach(ro => println(s"[${ro._1}] iterCnt = ${ro._2}  avgExecDur = ${ro._3}  avgTotalDur = ${ro._4}"))
 
 }

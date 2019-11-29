@@ -1,14 +1,12 @@
 package application
-import java.sql.Connection
-
-import common.{PgConnectProp, PgLoadConf, PgTestResult, PgTestResultAgr}
-import dbconn.PgConnection
+import common._
+import dbconn.{PgConnection, pgSess}
 import loadconf.PgLoadConfReader
 import org.slf4j.LoggerFactory
 import saveresults.PgSaveResultAsJson
 import testexec.PgTestExecuter
-import zio._
 import zio.console._
+import zio.{Task, _}
 
 object PgResearch extends App {
 
@@ -34,6 +32,22 @@ object PgResearch extends App {
 
 
   /**
+   *  MONITORING SESSIONS IN POSTGRES:
+   *
+   * select pid as process_id,
+   * usename as username,
+   * datname as database_name,
+   * client_addr as client_address,
+   * application_name,
+   * backend_start,
+   * state,
+   * state_change
+   * from pg_stat_activity p
+   * where coalesce(p.usename,'-')='prm_salary'
+   *
+  */
+
+  /**
    *   Get application input parameters and return Task[String] with input filename or fail
    *   with Exception.
    */
@@ -51,9 +65,46 @@ object PgResearch extends App {
       _ <- putStrLn(s"Begin with config file $fileName")
       dbConProps :PgConnectProp <- PgLoadConfReader.getDbConnectionProps(fileName)
       sqLoadConf :Seq[PgLoadConf] <- PgLoadConfReader.getLoadItems(fileName)
-      sess :Connection <- PgConnection.sess(dbConProps)
+      pgSess :pgSess <- PgConnection.sess(dbConProps)
+      sess :java.sql.Connection = pgSess.sess
       _ <- putStrLn(s"Connection opened - ${!sess.isClosed}")
-      sqTestResults :Seq[PgTestResult] <- IO.sequence(sqLoadConf.map(lc => PgTestExecuter.exec(sess,lc)))
+      runProperties :PgRunProp <- PgLoadConfReader.getPgRunProp(fileName)
+      _ <- putStrLn(s"Running in mode - ${runProperties.runAs} iterations = ${runProperties.repeat}")
+      sqTestResults :Seq[PgTestResult] <-
+        if (runProperties.runAs == "seq") {
+          //:todo remove val r and return t
+         val t : Task[Seq[PgTestResult]] = IO.sequence((1 to runProperties.repeat).flatMap(iterNum => sqLoadConf.map(lc => PgTestExecuter.exec(pgSess, lc))))
+          t
+        }
+        else if (runProperties.runAs == "seqpar") {
+         val tskListListPgRes : Task[List[List[PgTestResult]]] =
+           IO.sequence((1 to runProperties.repeat).map(
+           iterNum =>  {
+             val  ri :Task[List[PgTestResult]] = {
+                for {
+                  sessPar :pgSess <- PgConnection.sess(dbConProps)
+                 lst :List[PgTestResult] <- ZIO.collectAllPar(sqLoadConf.map(lc => PgTestExecuter.exec(sessPar,lc)))
+               } yield lst
+             }
+             ri
+           }
+         ))
+          //Task[List[PgTestResult]]
+            for {
+              ll: List[List[PgTestResult]] <- tskListListPgRes.map(ll => ll)
+              l <- Task(ll.flatten)
+            } yield l
+        }
+        else {//parallel with degree tests count * repeat
+          for {
+            //todo: check that it's real parallel execution.
+            sessPar :pgSess <- PgConnection.sess(dbConProps)
+            joinedFibers <- ZIO.collectAllPar(
+              (1 to runProperties.repeat)
+                .flatMap(iterNum => sqLoadConf.map(lc => PgTestExecuter.exec(sessPar, lc)))
+            )
+          } yield joinedFibers
+        }
       testAgrResult :PgTestResultAgr = PgTestResultAgr(sqTestResults)
       _/*saveOutputStatus*/ <- PgSaveResultAsJson.saveResIntoFile(testAgrResult)
     } yield testAgrResult
