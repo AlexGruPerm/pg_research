@@ -24,12 +24,14 @@ trait jdbcSession {
 object PgConnection extends jdbcSession {
 
   //todo: read PgConnectProp properties single time from input json.
-  val sess :Task[Connection] = createPgSess(
+  val sess : PgConnectProp => Task[Connection] = conProp =>
+    createPgSess(conProp/*
     PgConnectProp("org.postgresql.Driver",
       "jdbc:postgresql://172.17.100.53/db_ris_mkrpk",
       "prm_salary",
       "prm_salary"
     )
+   */
   )
 
 }

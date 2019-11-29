@@ -4,7 +4,7 @@ import zio.{Task, UIO}
 import java.io.{File, FileInputStream}
 import java.nio.charset.StandardCharsets
 
-import common.PgLoadConf
+import common.{PgConnectProp, PgLoadConf}
 
 /**
  *
@@ -39,6 +39,16 @@ object PgLoadConfReader {
       fileStringCont <- confFileContent(loadConfFileName)
       sqPgLoadConf <- PgLoadConfParser.parseConfFileCont(fileStringCont)
     } yield sqPgLoadConf
+
+  /**
+   *  Read input config file for load tests or research.
+   *  And return db connection properties as instance PgConnectProp
+  */
+  val getDbConnectionProps :String => Task[PgConnectProp]= loadConfFileName =>
+    for {
+      fileStringCont <- confFileContent(loadConfFileName)
+      connProps <- PgLoadConfParser.parseConnectProps(fileStringCont)
+    } yield connProps
 
 }
 

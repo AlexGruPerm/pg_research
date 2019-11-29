@@ -1,6 +1,6 @@
 package loadconf
 
-import common.PgLoadConf
+import common.{PgConnectProp, PgLoadConf}
 import io.circe._
 import io.circe.parser._
 import zio.Task
@@ -25,21 +25,41 @@ object PgLoadConfParser {
     } yield PgLoadConf(testNum, testName, procName)
   }
 
+  implicit val decoder2: Decoder[PgConnectProp] = Decoder.instance { h =>
+    for {
+      driver <- h.get[String]("driver")
+      url <- h.get[String]("url")
+      username <- h.get[String]("username")
+      password <- h.get[String]("password")
+    } yield PgConnectProp(driver,url,username,password)
+  }
+
+  //todo: next 2 function look like boilerplate, eliminate it with replacing in one common func.
 
   /**
    *  get input config file content parse it and return seq of objects that encapsulate
    *  test/research properties. One object for one test.
   */
   val parseConfFileCont : String => Task[Seq[PgLoadConf]] = fileStringCont => {
-    /*
-    todo: clear
-    val json = parse(fileStringCont).right.get
-    val sq = json.hcursor.downField("items").as[Seq[PgLoadConf]]
-    */
     parse(fileStringCont) match {
       case Left (failure) => Task.fail (new Exception (s"Invalid json in input file. $failure"))
       case Right (json) => {
         json.hcursor.downField("items").as[Seq[PgLoadConf]].swap match {
+          case   Left(sq) => Task.succeed(sq)
+          case   Right(failure) =>  Task.fail (new Exception (s"Invalid json in input file. $failure"))
+        }
+      }
+    }
+  }
+
+  /**
+   *  read connection properties from json, tag = db
+  */
+  val parseConnectProps : String => Task[PgConnectProp] = fileStringCont => {
+    parse(fileStringCont) match {
+      case Left (failure) => Task.fail (new Exception (s"Invalid json in input file. $failure"))
+      case Right (json) => {
+        json.hcursor.downField("db").as[PgConnectProp].swap match {
           case   Left(sq) => Task.succeed(sq)
           case   Right(failure) =>  Task.fail (new Exception (s"Invalid json in input file. $failure"))
         }
