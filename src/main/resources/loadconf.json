@@ -10,7 +10,7 @@
       {"key": "seq", "mean" : "run tests sequential"},
       {"ket": "par", "mean" : "run tests parallel with degree of parallelism equal tests count. (lightweight ZIO fibers)"}
     ],
-    "repeat" : "Count of iteration test running."
+    "repeat" : "Count of iteration test running in general."
   },
   "runprops": {
     "run_as" : "seq",

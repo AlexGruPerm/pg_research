@@ -14,7 +14,7 @@ object PgResearch extends App {
 
   def run(args: List[String]): ZIO[Console, Nothing, Int] = {
     val logger = LoggerFactory.getLogger(getClass.getName)
-    val f = PgResearchLive(List("C:\\pg_research\\src\\main\\resources\\loadconf.json") /*args*/).fold(
+    val f = PgResearchLive(args).fold(
       f => {
         logger.error(s"Fail PgResearch.run f=$f msg=${f.getMessage} cause=${f.getCause}")
         f.getStackTrace.foreach(errln => logger.error(errln.toString))
@@ -39,7 +39,9 @@ object PgResearch extends App {
    */
   private val getInputParamFileName : List[String] => Task[String] = argsList =>
     if (argsList.length == 0)
-      Task.fail(new Exception("No input test config file, use: scala PgResearch <filename.json>"))
+      //todo: don't forget replace succeed with fail.
+      //Task.fail(new Exception("No input test config file, use: scala PgResearch <filename.json>"))
+      Task.succeed("C:\\pg_research\\src\\main\\resources\\loadconf.json")
     else
       Task.succeed(argsList(0))
 
