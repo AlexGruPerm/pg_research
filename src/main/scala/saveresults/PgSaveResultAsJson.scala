@@ -5,8 +5,14 @@ import zio._
 
 object PgSaveResultAsJson {
 
-  val saveResIntoFile : (String,Seq[PgTestResult]) => Task[Boolean] = (outputFileName, sqPgTestResult) => {
-    ???
+  val saveResIntoFile : Seq[PgTestResult] => Task[Boolean] =  sqPgTestResult => {
+    /*
+  defOutputFileName <- Task("output.json")
+_ <- putStrLn(s"Test finished, save result into file name (default $defOutputFileName): ")
+name <- getStrLn
+saveRes <- PgSaveResultAsJson.saveResIntoFile(name,sqTestRes)
+  */
+    Task(true)
   }
 
 }

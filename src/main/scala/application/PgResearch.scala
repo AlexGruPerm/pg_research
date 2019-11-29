@@ -1,16 +1,24 @@
 package application
+import java.sql.Connection
+
 import common.{PgLoadConf, PgTestResult}
+import dbconn.PgConnection
 import loadconf.PgLoadConfReader
+import org.slf4j.LoggerFactory
+import saveresults.PgSaveResultAsJson
 import testexec.PgTestExecuter
 import zio._
 import zio.console._
 
 object PgResearch extends App {
 
-  def run(args: List[String]): ZIO[Console, Nothing, Int] =
-    PgResearchLive(List("C:\\pg_research\\src\\main\\resources\\loadconf.json")/*args*/).fold(
+  def run(args: List[String]): ZIO[Console, Nothing, Int] = {
+    val logger = LoggerFactory.getLogger(getClass.getName)
+    logger.info("PgResearch.run")
+    PgResearchLive(List("C:\\pg_research\\src\\main\\resources\\loadconf.json") /*args*/).fold(
       f => {
-        println(s"Fail PgResearch.run f=$f");
+        logger.error(s"Fail PgResearch.run f=$f msg=${f.getMessage} cause=${f.getCause}")
+        f.getStackTrace.foreach(errln => logger.error(errln.toString))
         0
       },
       s => {
@@ -18,7 +26,8 @@ object PgResearch extends App {
         s.foreach(println)
         1
       }
-  )
+    )
+  }
 
 
   /**
@@ -31,34 +40,15 @@ object PgResearch extends App {
     else
       Task.succeed(argsList(0))
 
-
-  private val saveResultIntoFile : Seq[PgTestResult] => ZIO[Console, Throwable, Boolean] =
-    sqTestRes => for {
-      /*
-        defOutputFileName <- Task("output.json")
-      _ <- putStrLn(s"Test finished, save result into file name (default $defOutputFileName): ")
-      name <- getStrLn
-      saveRes <- PgSaveResultAsJson.saveResIntoFile(name,sqTestRes)
-        */
-      saveRes <- Task(true)
-    } yield saveRes
-
-
   private val PgResearchLive : List[String] => ZIO[Console, Throwable, Seq[PgTestResult]] =
     args => for {
       fileName <- getInputParamFileName(args)
       _ <- putStrLn(s"Begin with config file $fileName")
       sqLoadConf :Seq[PgLoadConf] <- PgLoadConfReader.getLoadItems(fileName)
-      sqTestRes :Seq[PgTestResult] <- IO.sequence(sqLoadConf.map(PgTestExecuter.exec))
-      _/*saveOutputStatus*/ <- saveResultIntoFile(sqTestRes)
+      sess :Connection <- PgConnection.sess
+      _ <- putStrLn(s"Connection opened - ${!sess.isClosed}")
+      sqTestRes :Seq[PgTestResult] <- IO.sequence(sqLoadConf.map(lc => PgTestExecuter.exec(sess,lc)))
+      _/*saveOutputStatus*/ <- PgSaveResultAsJson.saveResIntoFile(sqTestRes)
     } yield sqTestRes
-
-
-
-
-
-
-
-
 
 }

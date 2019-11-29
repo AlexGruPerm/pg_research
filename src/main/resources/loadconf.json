@@ -1,15 +1,52 @@
 {
+  "db" : {
+    "driver" :"org.postgresql.Driver",
+    "url" :"jdbc:postgresql://172.17.100.53/db_ris_mkrpk",
+    "username" :"prm_salary",
+    "password" :"prm_salary"
+  },
+  "description": {
+    "run_as" : [
+      {"key": "seq", "mean" : "run tests sequential"},
+      {"ket": "par", "mean" : "run tests parallel with degree of parallelism equal tests count. (lightweight ZIO fibers)"}
+    ],
+    "repeat" : "Count of iteration test running."
+  },
+  "runprops": {
+    "run_as" : "seq",
+    "repeat" : 2
+  },
   "items": [
-      {
-        "num":"1",
-        "name":"Комбик ГРБС",
-        "proc":"prm_salary.pkg_web_cons_rep_grbs_list"
-      },
+    {
+      "num":"1",
+      "name":"Периоды",
+      "proc":"prm_salary.pkg_web_cons_rep_input_period_list(refcur => ?)"
+    },
       {
         "num":"2",
-        "name":"Комбик ГУ",
-        "proc":"prm_salary.pkg_web_cons_rep_institution_list"
-      }
+        "name":"ГРБС",
+        "proc":"prm_salary.pkg_web_cons_rep_grbs_list(refcur => ?, p_user_id => 45224506)"
+      },
+    {
+      "num":"3",
+      "name":"ГУ",
+      "proc":"prm_salary.pkg_web_cons_rep_institution_list(refcur => ?, p_user_id => 45224506)"
+    },
+    {
+      "num":"4",
+      "name":"Типы форм",
+      "proc":"prm_salary.pkg_web_cons_rep_form_type_list(refcur => ?)"
+    },
+    {
+      "num":"5",
+      "name":"Территории",
+      "proc":"prm_salary.pkg_web_cons_rep_territory_list(refcur => ?)"
+    },
+    {
+      "num":"6",
+      "name":"ОКВЕД",
+      "proc":"prm_salary.pkg_web_cons_rep_okved_list(refcur => ?)"
+    }
   ]
 }
 
