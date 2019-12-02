@@ -3,7 +3,7 @@ import common._
 import dbconn.{PgConnection, pgSess}
 import loadconf.PgLoadConfReader
 import org.slf4j.LoggerFactory
-import saveresults.PgSaveResultAsJson
+import saveresults.PgSaveResults
 import testexec.PgTestExecuter
 import java.util.concurrent.TimeUnit
 
@@ -76,6 +76,8 @@ object PgResearch extends App {
     else
       Task.succeed(argsList(0))
 
+
+  //todo: move 2 branches into separate val functions with private accessor.
   private val PgResearchLive : List[String] => ZIO[Console with Clock, Throwable, PgTestResultAgr] =
     args => for {
       fileName <- getInputParamFileName(args)
@@ -136,7 +138,8 @@ object PgResearch extends App {
         }
       tEnd <- clock.currentTime(TimeUnit.MILLISECONDS)
       testAgrResult :PgTestResultAgr = PgTestResultAgr(sqTestResults,tEnd-tBegin)
-      _/*saveOutputStatus*/ <- PgSaveResultAsJson.saveResIntoFile(testAgrResult)
+      saveResStatus <- PgSaveResults.saveResIntoFiles(testAgrResult)
+      _ <- putStrLn(s"Results saved in file $saveResStatus")
     } yield testAgrResult
 
 }

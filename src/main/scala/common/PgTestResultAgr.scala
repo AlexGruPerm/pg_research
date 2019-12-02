@@ -1,5 +1,6 @@
 package common
 
+
 /**
  *  Preset common tests result and individual tests results as  sqPgTestResult
 */

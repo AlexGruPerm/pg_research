@@ -8,6 +8,7 @@ lazy val Versions = new {
   val pgVers = "42.2.5"
   val zioVers = "1.0.0-RC17"
   val circeVers = "0.11.1"
+  val poiVers = "4.1.0"
 }
 
 scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked")
@@ -26,10 +27,14 @@ libraryDependencies ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  //"io.circe" %% "circe-core",
-  //"io.circe" %% "circe-generic",
-  "io.circe" %% "circe-parser"
+  "io.circe" %% "circe-core",
+  "io.circe" %% "circe-generic",
+  "io.circe" %% "circe-parser",
+  "io.circe" %%"circe-literal"
 ).map(_ % Versions.circeVers)
+
+libraryDependencies += "org.apache.poi" % "poi" % Versions.poiVers
+libraryDependencies += "org.apache.poi" % "poi-ooxml" % Versions.poiVers
 
 assemblyMergeStrategy in assembly := {
   case x if x.contains("io.netty.versions.properties") => MergeStrategy.discard
