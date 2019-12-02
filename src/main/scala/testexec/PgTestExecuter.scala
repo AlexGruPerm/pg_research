@@ -8,6 +8,7 @@ import zio._
 
 /**
  *   https://www.programcreek.com/scala/java.sql.ResultSet
+ *   https://www.mkyong.com/jdbc/how-do-connect-to-postgresql-with-jdbc-driver-java/
 */
 object PgTestExecuter {
 
@@ -47,6 +48,7 @@ object PgTestExecuter {
       conPg.pid,
       lc,
       startTs = tBegin,
+      endTs = tFetch,
       cursorColumns = columns,
       durExecMs = tExec - tBegin,
       durFetchMs = tFetch - tExec,

@@ -3,15 +3,16 @@ package common
 /**
  * pid = SELECT pg_backend_pid() as pg_backend_pid
 */
-case class PgTestResult( pid : Int,
-                         loadConf :PgLoadConf,
-                        startTs  :Long,
+case class PgTestResult(pid: Int,
+                        loadConf: PgLoadConf,
+                        startTs: Long,
+                        endTs: Long,
                         //chronoRunNumber : Int,
-                        cursorColumns: IndexedSeq[(String,String)],
-                        durExecMs :Long,
-                        durFetchMs :Long,
-                        durTotalMs :Long,
-                        numRows :Int){
+                        cursorColumns: IndexedSeq[(String, String)],
+                        durExecMs: Long,
+                        durFetchMs: Long,
+                        durTotalMs: Long,
+                        numRows: Int) {
   override def toString =
     s"[${loadConf.testNum}] pid=[$pid] startTs [$startTs] " +
       s"${loadConf.testName}   " +

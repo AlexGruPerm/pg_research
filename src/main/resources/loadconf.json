@@ -14,8 +14,8 @@
     "repeat" : "Count of iteration test running in general."
   },
   "runprops": {
-    "runAs" : "par",
-    "repeat" : 10
+    "runAs" : "seq",
+    "repeat" : 3
   },
   "items": [
     {

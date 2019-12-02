@@ -65,7 +65,7 @@ object PgResearch extends App {
       _ <- putStrLn(s"Begin with config file $fileName")
       dbConProps :PgConnectProp <- PgLoadConfReader.getDbConnectionProps(fileName)
       sqLoadConf :Seq[PgLoadConf] <- PgLoadConfReader.getLoadItems(fileName)
-      pgSess :pgSess <- PgConnection.sess(dbConProps)
+      pgSess :pgSess <- (new PgConnection).sess(dbConProps)
       sess :java.sql.Connection = pgSess.sess
       _ <- putStrLn(s"Connection opened - ${!sess.isClosed}")
       runProperties :PgRunProp <- PgLoadConfReader.getPgRunProp(fileName)
@@ -82,7 +82,7 @@ object PgResearch extends App {
            iterNum =>  {
              val  ri :Task[List[PgTestResult]] = {
                 for {
-                  sessPar :pgSess <- PgConnection.sess(dbConProps)
+                  sessPar :pgSess <- (new PgConnection).sess(dbConProps)
                  lst :List[PgTestResult] <- ZIO.collectAllPar(sqLoadConf.map(lc => PgTestExecuter.exec(sessPar,lc)))
                } yield lst
              }
@@ -98,7 +98,7 @@ object PgResearch extends App {
         else {//parallel with degree tests count * repeat
           for {
             //todo: check that it's real parallel execution.
-            sessPar :pgSess <- PgConnection.sess(dbConProps)
+            sessPar :pgSess <- (new PgConnection).sess(dbConProps)
             joinedFibers <- ZIO.collectAllPar(
               (1 to runProperties.repeat)
                 .flatMap(iterNum => sqLoadConf.map(lc => PgTestExecuter.exec(sessPar, lc)))

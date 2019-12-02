@@ -32,7 +32,7 @@ trait jdbcSession {
 /**
  *  Singleton object that keep db connection.
 */
-object PgConnection extends jdbcSession {
+class PgConnection extends jdbcSession {
 
   //todo: read PgConnectProp properties single time from input json.
   val sess : PgConnectProp => Task[pgSess] = conProp =>
