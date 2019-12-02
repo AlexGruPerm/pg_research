@@ -1,3 +1,5 @@
 /.idea/
-/project/project
+/project/project/
+/project/target/
+/PgResearch-build/
 /target/
