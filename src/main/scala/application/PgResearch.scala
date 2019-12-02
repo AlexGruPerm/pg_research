@@ -72,7 +72,7 @@ object PgResearch extends App {
     if (argsList.length == 0)
       //todo: don't forget replace succeed with fail.
       //Task.fail(new Exception("No input test config file, use: scala PgResearch <filename.json>"))
-      Task.succeed("C:\\pg_research\\src\\main\\resources\\loadconf.json")
+      Task.succeed("/home/gdev/data/home/data/PROJECTS/pg_research/src/main/resources/loadconf.json"/*"C:\\pg_research\\src\\main\\resources\\loadconf.json"*/)
     else
       Task.succeed(argsList(0))
 
