@@ -1,5 +1,7 @@
 package saveresults
 
+import java.io.{BufferedWriter, File, FileWriter}
+
 import common.{PgLoadConf, PgTestResult, PgTestResultAgr}
 import io.circe.Encoder
 import io.circe.syntax._
@@ -31,6 +33,7 @@ object PgSaveResults {
       (u.sqPgTestResult)
     )
 
+
   /**
    *  Save results into output files.
    */
@@ -41,7 +44,12 @@ object PgSaveResults {
     Task("Success saved output files : output_02122019_170005.json, output_02122019_170005.xls")
   }
 
-
+  private def writeFile(filename: String, s: String): Unit = {
+    val file = new File(filename)
+    val bw = new BufferedWriter(new FileWriter(file))
+    bw.write(s)
+    bw.close()
+  }
 
   /**
    *  Save results into output Excel and return it's name.
@@ -54,10 +62,12 @@ object PgSaveResults {
   /**
    *  Save results into output json and return it's name.
   */
+    //todo: make save in ZIO witj bracer/breaker
   private val saveResIntoJsonFile : PgTestResultAgr => Task[String] =  sqPgTestResult => {
     val resAsJson = sqPgTestResult.asJson
-    val resJsonFileName = "output.json"
-    Task("output_02122019_170005.json")
+
+    writeFile("output.json",resAsJson.asString.getOrElse("{}"))
+    Task( "output.json")
   }
 
 

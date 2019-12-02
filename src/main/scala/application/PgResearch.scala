@@ -104,10 +104,16 @@ object PgResearch extends App {
            iterNum =>  {
              val  ri :Task[List[PgTestResult]] = {
                 for {
-                   sessPar :pgSess <- (new PgConnection).sess(dbConProps)
-                   lst :List[PgTestResult] <- ZIO.collectAllPar(
-                   sqLoadConf.map(lc => PgTestExecuter.exec(sessPar,lc))
-                 )
+                   lst :List[PgTestResult] <-
+                     ZIO.collectAllPar(
+                       sqLoadConf.map(
+                         lc =>
+                           for {
+                             thisSess <- (new PgConnection).sess(dbConProps)
+                             tr <- PgTestExecuter.exec(thisSess, lc)
+                           } yield tr
+                       )
+                     )
                } yield lst
              }
              ri
@@ -124,16 +130,21 @@ object PgResearch extends App {
             //todo: check that it's real parallel execution.
             //sessPar :pgSess <- (new PgConnection).sess(dbConProps)
             joinedFibers <- ZIO.collectAllPar(
+              /*
               (1 to runProperties.repeat)
-                .flatMap(iterNum => sqLoadConf.map(
+                .flatMap(iterNum => scala.util.Random.shuffle(sqLoadConf).map(
+                  */
+              (1 to runProperties.repeat).toList.flatMap(i => (scala.util.Random.shuffle(sqLoadConf).map(t => (i,t))))
+                .map(
                   lc =>
                   for {
                     thisSess <- (new PgConnection).sess(dbConProps)
-                    tr <- PgTestExecuter.exec(thisSess, lc)
+                    tr <- PgTestExecuter.exec(thisSess, lc._2)
                   } yield tr
                 )
+
                 )
-            )
+            //)
           } yield joinedFibers
         }
       tEnd <- clock.currentTime(TimeUnit.MILLISECONDS)
