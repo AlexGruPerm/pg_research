@@ -24,6 +24,8 @@ import zio.{Task, _}
 */
 object PgResearch extends App {
 
+  //todo: remove all println and use everywhere only _ <- putStrLn
+
   def run(args: List[String]): ZIO[Console with Clock, Nothing, Int] = {
     val logger = LoggerFactory.getLogger(getClass.getName)
     val f = PgResearchLive(args).fold(
