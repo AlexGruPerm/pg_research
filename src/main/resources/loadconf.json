@@ -15,7 +15,7 @@
   },
   "runprops": {
     "runAs" : "par",
-    "repeat" : 10
+    "repeat" : 3
   },
   "items": [
     {

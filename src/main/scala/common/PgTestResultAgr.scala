@@ -3,7 +3,8 @@ package common
 /**
  *  Preset common tests result and individual tests results as  sqPgTestResult
 */
-case class PgTestResultAgr(sqPgTestResult :Seq[PgTestResult]){
+//commonDurationMs :ZIO[Clock, Nothing, Long]
+case class PgTestResultAgr(sqPgTestResult :Seq[PgTestResult],commDurMs :Long){
 
   def sumExecDur :Long = sqPgTestResult.map(tr => tr.durExecMs).sum
   def sumFetchDur :Long = sqPgTestResult.map(tr => tr.durFetchMs).sum
@@ -22,8 +23,7 @@ case class PgTestResultAgr(sqPgTestResult :Seq[PgTestResult]){
   def runCount(testNum :Int) :Int =
     sqPgTestResult.collect{case tr if tr.loadConf.testNum==testNum => tr.durExecMs}.size
 
-  override def toString: String =
-    s" Sum of execution time (e,f,t) = ($sumExecDur  $sumFetchDur  $sumTotalDur) "
+  override def toString: String = s" Sum of execution time (e,f,t) = ($sumExecDur  $sumFetchDur  $sumTotalDur) "
 
   def getAgrStats :Unit =
     sqPgTestResult.map(tr => tr.loadConf.testNum).distinct.map(tnum => (tnum,runCount(tnum),avgExecDur(tnum),avgTotalDur(tnum)))
