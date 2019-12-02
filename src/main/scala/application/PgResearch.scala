@@ -73,7 +73,9 @@ object PgResearch extends App {
       sqTestResults :Seq[PgTestResult] <-
         if (runProperties.runAs == "seq") {
           //:todo remove val r and return t
-         val t : Task[Seq[PgTestResult]] = IO.sequence((1 to runProperties.repeat).flatMap(iterNum => sqLoadConf.map(lc => PgTestExecuter.exec(pgSess, lc))))
+         val t : Task[Seq[PgTestResult]] =
+           IO.sequence((1 to runProperties.repeat)
+             .flatMap(iterNum => sqLoadConf.map(lc => PgTestExecuter.exec(pgSess, lc))))
           t
         }
         else if (runProperties.runAs == "seqpar") {
@@ -82,8 +84,10 @@ object PgResearch extends App {
            iterNum =>  {
              val  ri :Task[List[PgTestResult]] = {
                 for {
-                  sessPar :pgSess <- (new PgConnection).sess(dbConProps)
-                 lst :List[PgTestResult] <- ZIO.collectAllPar(sqLoadConf.map(lc => PgTestExecuter.exec(sessPar,lc)))
+                   sessPar :pgSess <- (new PgConnection).sess(dbConProps)
+                   lst :List[PgTestResult] <- ZIO.collectAllPar(
+                   sqLoadConf.map(lc => PgTestExecuter.exec(sessPar,lc))
+                 )
                } yield lst
              }
              ri
@@ -98,10 +102,17 @@ object PgResearch extends App {
         else {//parallel with degree tests count * repeat
           for {
             //todo: check that it's real parallel execution.
-            sessPar :pgSess <- (new PgConnection).sess(dbConProps)
+            //sessPar :pgSess <- (new PgConnection).sess(dbConProps)
             joinedFibers <- ZIO.collectAllPar(
               (1 to runProperties.repeat)
-                .flatMap(iterNum => sqLoadConf.map(lc => PgTestExecuter.exec(sessPar, lc)))
+                .flatMap(iterNum => sqLoadConf.map(
+                  lc =>
+                  for {
+                    thisSess <- (new PgConnection).sess(dbConProps)
+                    tr <- PgTestExecuter.exec(thisSess, lc)
+                  } yield tr
+                )
+                )
             )
           } yield joinedFibers
         }
@@ -110,3 +121,8 @@ object PgResearch extends App {
     } yield testAgrResult
 
 }
+/**
+ *
+ *    scala.util.Random.shuffle(seqTickers)
+ *
+*/
