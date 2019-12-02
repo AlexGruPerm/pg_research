@@ -23,7 +23,7 @@ case class PgTestResultAgr(sqPgTestResult :Seq[PgTestResult]){
     sqPgTestResult.collect{case tr if tr.loadConf.testNum==testNum => tr.durExecMs}.size
 
   override def toString: String =
-    s" TotalDuration (e,f,t) = ($sumExecDur  $sumFetchDur  $sumTotalDur) "
+    s" Sum of execution time (e,f,t) = ($sumExecDur  $sumFetchDur  $sumTotalDur) "
 
   def getAgrStats :Unit =
     sqPgTestResult.map(tr => tr.loadConf.testNum).distinct.map(tnum => (tnum,runCount(tnum),avgExecDur(tnum),avgTotalDur(tnum)))
