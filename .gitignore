@@ -1,8 +1,6 @@
 /.idea/
+/project/
 /project/project/
+/project/target/
 /PgResearch-build/
 /target/
-/project/target/
-/project/target/config-classes/
-/project/target/scala-2.12/
-/project/target/streams/
