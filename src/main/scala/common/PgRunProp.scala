@@ -15,9 +15,9 @@ package common
  *  par and iterNum = 3 => running in parallel (1,2,1,3,2,1,3,3,2)
 */
 sealed trait runAsType
-object runAsSeq extends runAsType
-object runAsSeqPar extends runAsType
-object runAsPar extends runAsType
+final case object runAsSeq extends runAsType
+final case object runAsSeqPar extends runAsType
+final case object runAsPar extends runAsType
 
 case class PgRunProp(runAs :runAsType, repeat :Int)
 
