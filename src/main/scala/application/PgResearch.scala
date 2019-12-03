@@ -25,6 +25,12 @@ import zio.{Task, _}
 object PgResearch extends App {
 
   //todo: remove all println and use everywhere only _ <- putStrLn
+  /**
+   *  todo: add timout on effects  https://zio.dev/docs/overview/overview_basic_concurrency
+   *  Timeout
+   *  ZIO lets you timeout any effect using the ZIO#timeout method,
+   *
+  */
 
   def run(args: List[String]): ZIO[Console with Clock, Nothing, Int] = {
     val logger = LoggerFactory.getLogger(getClass.getName)
@@ -102,12 +108,11 @@ object PgResearch extends App {
   private val seqparExec : (PgRunProp, PgConnectProp, Seq[PgLoadConf]) => Task[Seq[PgTestResult]] =
     (runProperties, dbConProps, sqLoadConf) => {
       val tskListListPgRes : Task[List[List[PgTestResult]]] =
-      IO.sequence((1 to runProperties.repeat).map(
-        _ =>  {
-          val  ri :Task[List[PgTestResult]] = {
-            for {
+      IO.sequence(
+        (1 to runProperties.repeat).map(
+        _ => for {
               lst :List[PgTestResult] <-
-                ZIO.collectAllPar(
+                ZIO.collectAllPar(//Collects from many effects in parallel
                   sqLoadConf.map(
                     lc =>
                       for {
@@ -115,12 +120,10 @@ object PgResearch extends App {
                         tr <- PgTestExecuter.exec(thisSess, lc)
                       } yield tr
                   )
-                )
-            } yield lst
-          }
-          ri
-        }
-      ))
+                  )
+            } yield lst  //  Task[List[PgTestResult]]
+      )
+      )
       for {
         ll: List[List[PgTestResult]] <- tskListListPgRes.map(ll => ll)
         l <- Task(ll.flatten)
