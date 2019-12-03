@@ -11,11 +11,13 @@
       {"ket": "seqpar", "mean" : "run tests sequential of iterations and parallel inside iterations with degree of parallelism equal tests count. (lightweight ZIO fibers)"},
       {"ket": "par", "mean" : "run tests parallel with degree of parallelism equal tests count * itercount. (lightweight ZIO fibers)"}
     ],
-    "repeat" : "Count of iteration test running in general."
+    "repeat" : "Count of iteration test running in general.",
+    "qtimeoutms" : "Global timeout milliseconds that will be used for each query."
   },
   "runprops": {
     "runAs" : "seqpar",
-    "repeat" : 10
+    "repeat" : 10,
+    "qtimeoutms" : 500
   },
   "items": [
     {

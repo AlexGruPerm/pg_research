@@ -12,7 +12,7 @@ import zio._
 */
 object PgTestExecuter {
 
-  val exec :(pgSess,PgLoadConf) => Task[PgTestResult] = (conPg,lc) => {
+  val exec :(Int,pgSess,PgLoadConf) => Task[PgTestResult] = (iterNum,conPg,lc) => {
     /**
     * prm_salary.pkg_web_cons_rep_grbs_list( refcur => 'cursor_unq_name', p_user_id => 45224506);
     */
@@ -45,6 +45,7 @@ object PgTestExecuter {
     val tFetch = System.currentTimeMillis
 
     Task(PgTestResult(
+      iterNum,
       conPg.pid,
       lc,
       startTs = tBegin,
