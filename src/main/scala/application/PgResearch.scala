@@ -64,6 +64,7 @@ object PgResearch extends App {
    *
   */
 
+
   /**
    *   Get application input parameters and return Task[String] with input filename or fail
    *   with Exception.
@@ -72,81 +73,108 @@ object PgResearch extends App {
     if (argsList.length == 0)
       //todo: don't forget replace succeed with fail.
       //Task.fail(new Exception("No input test config file, use: scala PgResearch <filename.json>"))
-      Task.succeed("/home/gdev/data/home/data/PROJECTS/pg_research/src/main/resources/loadconf.json"/*"C:\\pg_research\\src\\main\\resources\\loadconf.json"*/)
+      //Task.succeed("/home/gdev/data/home/data/PROJECTS/pg_research/src/main/resources/loadconf.json")
+      Task.succeed("C:\\pg_research\\src\\main\\resources\\loadconf.json")
     else
       Task.succeed(argsList(0))
 
 
-  //todo: move 2 branches into separate val functions with private accessor.
+  /**
+   *  For sequential execution of procedures.
+  */
+  private val seqExec : (PgRunProp, PgConnectProp, Seq[PgLoadConf]) => Task[Seq[PgTestResult]] =
+    (runProperties, dbConProps, sqLoadConf) => {
+    for {
+      pgSess :pgSess <- (new PgConnection).sess(dbConProps)
+      sqTestResults :Seq[PgTestResult]  <-
+        IO.sequence(
+          (1 to runProperties.repeat).flatMap(
+            _ => sqLoadConf.map(lc => PgTestExecuter.exec(pgSess, lc))
+          )
+        )
+    } yield sqTestResults
+  }
+
+
+  /**
+   *  For sequential execution of procedures, inside the iteration procedures execute in parallel.
+   */
+  private val seqparExec : (PgRunProp, PgConnectProp, Seq[PgLoadConf]) => Task[Seq[PgTestResult]] =
+    (runProperties, dbConProps, sqLoadConf) => {
+      val tskListListPgRes : Task[List[List[PgTestResult]]] =
+      IO.sequence((1 to runProperties.repeat).map(
+        _ =>  {
+          val  ri :Task[List[PgTestResult]] = {
+            for {
+              lst :List[PgTestResult] <-
+                ZIO.collectAllPar(
+                  sqLoadConf.map(
+                    lc =>
+                      for {
+                        thisSess <- (new PgConnection).sess(dbConProps)
+                        tr <- PgTestExecuter.exec(thisSess, lc)
+                      } yield tr
+                  )
+                )
+            } yield lst
+          }
+          ri
+        }
+      ))
+      for {
+        ll: List[List[PgTestResult]] <- tskListListPgRes.map(ll => ll)
+        l <- Task(ll.flatten)
+      } yield l
+    }
+
+
+  /**
+   *  For parallel execution of procedures.
+   */
+  private val parExec : (PgRunProp, PgConnectProp, Seq[PgLoadConf]) => Task[Seq[PgTestResult]] =
+    (runProperties, dbConProps, sqLoadConf) =>
+      for {
+        joinedFibers <- ZIO.collectAllPar(
+          (1 to runProperties.repeat).toList.flatMap(i => scala.util.Random.shuffle(sqLoadConf).map(t => (i, t)))
+            .map(
+              lc =>
+                for {
+                  thisSess <- (new PgConnection).sess(dbConProps)
+                  tr <- PgTestExecuter.exec(thisSess, lc._2)
+                } yield tr
+            )
+        )
+      } yield joinedFibers
+
+
+  /**
+   *  Check that connect cridentionals are valid.
+  */
+  private val checkDbConnectCredits : Task[PgConnectProp] => ZIO[Console, Throwable, Unit] = TdbConProps =>
+    for {
+      dbConProps <- TdbConProps
+      pgSes: pgSess <- (new PgConnection).sess(dbConProps)
+      _ <- putStrLn(s"Connection opened - ${!pgSes.sess.isClosed}")
+    } yield ()
+
+
   private val PgResearchLive : List[String] => ZIO[Console with Clock, Throwable, PgTestResultAgr] =
     args => for {
       fileName <- getInputParamFileName(args)
       _ <- putStrLn(s"Begin with config file $fileName")
-      dbConProps :PgConnectProp <- PgLoadConfReader.getDbConnectionProps(fileName)
+      pgcp = PgLoadConfReader.getDbConnectionProps(fileName)
+      dbConProps :PgConnectProp <- pgcp
       sqLoadConf :Seq[PgLoadConf] <- PgLoadConfReader.getLoadItems(fileName)
-      pgSess :pgSess <- (new PgConnection).sess(dbConProps)
-      sess :java.sql.Connection = pgSess.sess
-      _ <- putStrLn(s"Connection opened - ${!sess.isClosed}")
+      _ <- checkDbConnectCredits(pgcp)
       runProperties :PgRunProp <- PgLoadConfReader.getPgRunProp(fileName)
       _ <- putStrLn(s"Running in mode - ${runProperties.runAs} iterations = ${runProperties.repeat}")
       tBegin <- clock.currentTime(TimeUnit.MILLISECONDS)
-      sqTestResults :Seq[PgTestResult] <-
-        if (runProperties.runAs == "seq") {
-          //:todo remove val r and return t
-         val t : Task[Seq[PgTestResult]] =
-           IO.sequence((1 to runProperties.repeat)
-             .flatMap(iterNum => sqLoadConf.map(lc => PgTestExecuter.exec(pgSess, lc))))
-          t
-        }
-        else if (runProperties.runAs == "seqpar") {
-         val tskListListPgRes : Task[List[List[PgTestResult]]] =
-           IO.sequence((1 to runProperties.repeat).map(
-           iterNum =>  {
-             val  ri :Task[List[PgTestResult]] = {
-                for {
-                   lst :List[PgTestResult] <-
-                     ZIO.collectAllPar(
-                       sqLoadConf.map(
-                         lc =>
-                           for {
-                             thisSess <- (new PgConnection).sess(dbConProps)
-                             tr <- PgTestExecuter.exec(thisSess, lc)
-                           } yield tr
-                       )
-                     )
-               } yield lst
-             }
-             ri
-           }
-         ))
-          //Task[List[PgTestResult]]
-            for {
-              ll: List[List[PgTestResult]] <- tskListListPgRes.map(ll => ll)
-              l <- Task(ll.flatten)
-            } yield l
-        }
-        else {//parallel with degree tests count * repeat
-          for {
-            //todo: check that it's real parallel execution.
-            //sessPar :pgSess <- (new PgConnection).sess(dbConProps)
-            joinedFibers <- ZIO.collectAllPar(
-              /*
-              (1 to runProperties.repeat)
-                .flatMap(iterNum => scala.util.Random.shuffle(sqLoadConf).map(
-                  */
-              (1 to runProperties.repeat).toList.flatMap(i => (scala.util.Random.shuffle(sqLoadConf).map(t => (i,t))))
-                .map(
-                  lc =>
-                  for {
-                    thisSess <- (new PgConnection).sess(dbConProps)
-                    tr <- PgTestExecuter.exec(thisSess, lc._2)
-                  } yield tr
-                )
-
-                )
-            //)
-          } yield joinedFibers
-        }
+      sqTestResults :Seq[PgTestResult] <- runProperties.runAs
+      match {
+        case _ :runAsSeq.type => seqExec(runProperties,dbConProps,sqLoadConf)
+        case _ :runAsSeqPar.type => seqparExec(runProperties,dbConProps,sqLoadConf)
+        case _ :runAsPar.type => parExec(runProperties,dbConProps,sqLoadConf)
+      }
       tEnd <- clock.currentTime(TimeUnit.MILLISECONDS)
       testAgrResult :PgTestResultAgr = PgTestResultAgr(sqTestResults,tEnd-tBegin)
       saveResStatus <- PgSaveResults.saveResIntoFiles(testAgrResult)
@@ -154,8 +182,3 @@ object PgResearch extends App {
     } yield testAgrResult
 
 }
-/**
- *
- *    scala.util.Random.shuffle(seqTickers)
- *
-*/

@@ -14,4 +14,21 @@ package common
  *  par and iterNum = 1 => running in parallel (1,2,3)
  *  par and iterNum = 3 => running in parallel (1,2,1,3,2,1,3,3,2)
 */
-case class PgRunProp(runAs :String, repeat :Int)
+sealed trait runAsType
+object runAsSeq extends runAsType
+object runAsSeqPar extends runAsType
+object runAsPar extends runAsType
+
+case class PgRunProp(runAs :runAsType, repeat :Int)
+
+object PgRunProp {
+  def apply(runAs :String, repeat :Int) : PgRunProp = {
+    //???? todo : require(Seq("seq","seqpar","par").contains(runAs.toLowerCase))
+     runAs.toLowerCase match {
+       case "seq" => PgRunProp(runAsSeq,repeat)
+       case "seqpar" => PgRunProp(runAsSeqPar,repeat)
+       case "par" => PgRunProp(runAsPar,repeat)
+       case _ => PgRunProp(runAsSeq,repeat)
+     }
+  }
+}
