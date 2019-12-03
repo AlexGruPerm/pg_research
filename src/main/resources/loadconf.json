@@ -15,7 +15,7 @@
     "qtimeoutms" : "Global timeout milliseconds that will be used for each query."
   },
   "runprops": {
-    "runAs" : "seqpar",
+    "runAs" : "seq",
     "repeat" : 10,
     "qtimeoutms" : 500
   },
