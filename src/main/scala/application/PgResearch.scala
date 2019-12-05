@@ -128,7 +128,23 @@ object PgResearch extends App {
             } yield sqTestResults
           )
         )
-      } yield sqTestResults.flatMap(l => l)
+      } yield sqTestResults.flatten
+
+  //todo: remove all xyExec functions in separate file.
+
+  /**
+   *  Run all iterations inparallel with degree = runProperties.repeat
+   *  and inside iterations run test sequential
+   */
+  private val parParExec: (PgRunProp, PgConnectProp, Seq[PgLoadConf]) => Task[Seq[PgTestResult]] =
+    (runProperties, dbConProps, sqLoadConf) =>
+      for {
+        sqTestResults <- ZIO.collectAllPar(
+          (1 to runProperties.repeat).toList.map(thisIter => execTestsParallel(thisIter, dbConProps, sqLoadConf)
+          )
+        )
+      } yield sqTestResults.flatten
+
 
 
   /**
@@ -276,7 +292,7 @@ object PgResearch extends App {
         case _ :runAsSeqPar.type => seqparExec(runProperties,dbConProps,sqLoadConf)
         case _ :runAsPar.type => parExec(runProperties,dbConProps,sqLoadConf)
         case _ :runAsParSeq.type => parSeqExec(runProperties,dbConProps,sqLoadConf)
-        case _ :runAsParPar.type => ???
+        case _ :runAsParPar.type => parParExec(runProperties,dbConProps,sqLoadConf)
       }
       tEnd <- clock.currentTime(TimeUnit.MILLISECONDS)
       testAgrResult :PgTestResultAgr = PgTestResultAgr(sqTestResults,tEnd-tBegin)
