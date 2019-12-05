@@ -18,9 +18,8 @@ sealed trait runAsType
 final case object runAsSeq extends runAsType
 final case object runAsSeqPar extends runAsType
 final case object runAsPar extends runAsType
-//todo: new type for high load test.
-//final case object runAsParSeq extends runAsType -- @ emulate users with old seq execution of test.
-//final case object runAsParPar extends runAsType -- ! emulate users with new parallel from web.
+final case object runAsParSeq extends runAsType
+final case object runAsParPar extends runAsType
 
 
 case class PgRunProp(runAs :runAsType, repeat :Int)

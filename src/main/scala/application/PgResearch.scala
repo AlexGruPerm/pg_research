@@ -70,8 +70,8 @@ object PgResearch extends App {
     if (argsList.length == 0)
     //todo: don't forget replace succeed with fail.
     //Task.fail(new Exception("No input test config file, use: scala PgResearch <filename.json>"))
-      Task.succeed("/home/gdev/data/home/data/PROJECTS/pg_research/src/main/resources/loadconf.json")
-      //Task.succeed("C:\\pg_research\\src\\main\\resources\\loadconf.json")
+      //Task.succeed("/home/gdev/data/home/data/PROJECTS/pg_research/src/main/resources/loadconf.json")
+      Task.succeed("C:\\pg_research\\src\\main\\resources\\loadconf.json")
     else
       Task.succeed(argsList(0))
 
@@ -110,14 +110,51 @@ object PgResearch extends App {
         )
       } yield sqTestResults
 
+  /**
+   *  Run all iterations inparallel with degree = runProperties.repeat
+   *  and inside iterations run test sequential
+   */
+  private val parSeqExec: (PgRunProp, PgConnectProp, Seq[PgLoadConf]) => Task[Seq[PgTestResult]] =
+    (runProperties, dbConProps, sqLoadConf) =>
+      for {
+        sqTestResults :List[List[PgTestResult]] <- ZIO.collectAllPar(
+          (1 to runProperties.repeat).toList.map(thisIter =>
+            for {
+              pgSess: pgSess <- (new PgConnection).sess(dbConProps)
+              sqTestResults: Seq[PgTestResult] <-
+                IO.sequence(
+                  sqLoadConf.map(lc => PgTestExecuter.exec(thisIter, pgSess, lc))
+                )
+            } yield sqTestResults
+          )
+        )
+      } yield sqTestResults.flatMap(l => l)
+
 
   /**
    * execute test in parallel,
    * for using in seqparExec
    */
+
   private val execTestsParallel: (Int, PgConnectProp, Seq[PgLoadConf]) => Task[Seq[PgTestResult]] =
     (iterNum, dbConProps, sqLoadConf) =>
-      ZIO.collectAllPar( //Collects from many effects in parallel
+      ZIO.collectAllPar(
+        sqLoadConf.map( lc => {
+                                for {
+                                  thisSess <- (new PgConnection).sess(dbConProps)
+                                  tr :PgTestResult <- PgTestExecuter.exec(iterNum, thisSess, lc)
+                                } yield tr
+                              }
+        )
+      )
+
+
+
+    /*
+    OK !!!
+  private val execTestsParallel: (Int, PgConnectProp, Seq[PgLoadConf]) => Task[Seq[PgTestResult]] =
+    (iterNum, dbConProps, sqLoadConf) =>
+      ZIO.collectAllPar(
         sqLoadConf.map( lc =>
           for {
             thisSess <- (new PgConnection).sess(dbConProps)
@@ -125,6 +162,7 @@ object PgResearch extends App {
           } yield tr
         )
       )
+  */
 
   /** docs:
    * You can execute two effects in sequence with the flatMap method
@@ -144,17 +182,23 @@ object PgResearch extends App {
   // IO.sequnce => IO.collectAll
   /**
    * For sequential execution of procedures, inside the iteration procedures execute in parallel.
-   */
+
     //  Task[Seq[PgTestResult]]
     //  execTestsParallel(dbConProps, sqLoadConf))
-    /*
+
     Because the ZIO data type supports both flatMap and map, you can use Scala's for comprehensions to build sequential effects:
      for {
     _    <- putStrLn("Hello! What is your name?")
     name <- getStrLn
     _    <- putStrLn(s"Hello, ${name}, welcome to ZIO!")
   } yield ()
-    */
+
+   collectAll
+   * Evaluate each effect in the structure from left to right, and collect
+   * the results.
+
+   */
+
 
   private val seqparExec: (PgRunProp, PgConnectProp, Seq[PgLoadConf]) => Task[Seq[PgTestResult]] =
     (runProperties, dbConProps, sqLoadConf) =>
@@ -166,82 +210,18 @@ object PgResearch extends App {
         r <- Task(sqTestResults.flatten)
       } yield r
 
-      /*
+/* ok3:
+
+    (runProperties, dbConProps, sqLoadConf) =>
       for {
-       sqTestResults :Seq[Task[Seq[PgTestResult]]] <- (1 to runProperties.repeat).toList.map(thisIteration => execTestsParallel(thisIteration, dbConProps, sqLoadConf))
-       ct :Seq[Seq[PgTestResult]] = ZIO.collectAll(sqTestResults)
-      } yield sqTestResults
-  */
-
-
-
-    /* {
-      val lts : Seq[Task[Seq[PgTestResult]]] = (1 to runProperties.repeat).toList.map(itNum => execTestsParallel(itNum, dbConProps, sqLoadConf))
-      val ct : Task[Seq[Seq[PgTestResult]]] = ZIO.collectAll(lts)
-
-      val xz :Task[Seq[PgTestResult]] = for {
-        ss :Seq[Seq[PgTestResult]] <- ct
-
-        r :Seq[PgTestResult] = ss.flatMap{
-          thisGroup =>
-            for {
-            subGrpRes <- ZIO.collectAllPar(thisGroup)
-          } yield subGrpRes
-        }
-
-        /*
-        r :Seq[PgTestResult] = ss.flatMap{thisGroup =>
-          for {
-           subGrpRes <- thisGroup
-          } yield subGrpRes
-        }
-        */
-
-
-        //r  :Seq[PgTestResult] = ss.flatten
+        sqTestResults: List[Seq[PgTestResult]] <-
+          IO.collectAll(
+            (1 to runProperties.repeat).map(thisIter => execTestsParallel(thisIter, dbConProps, sqLoadConf))
+          )
+        r <- Task(sqTestResults.flatten)
       } yield r
+
 */
-
-      //val seqExecGroups :Task[Seq[PgTestResult]] = Task(ct.flatMap(thisSeq => thisSeq.flatMap(st => st)))
-        /*
-        for {
-        sspr :Seq[PgTestResult] <- seqExecGroups
-      } yield sspr
-      */
-/*
-      xz//seqExecGroups
-    }
-  */
-
-
-    /*
-      for {
-        //sqTestResults: Seq[PgTestResult] <-
-        itsList :List[Int] <- Task(List(1,2,3,4,5))
-        v :List[Task[Seq[PgTestResult]]] <- itsList.flatMap(itNum => execTestsParallel(itNum, dbConProps, sqLoadConf))
-
-        /*
-            Task(List(1,2,3,4,5)/*1 to runProperties.repeat*/).flatMap(
-              itn => itn.map(itNum => execTestsParallel(itNum, dbConProps, sqLoadConf))
-            )
-        */
-
-        r <- IO.collectAll(sqTestResults)
-      } yield ???//sqTestResults
-  */
-
-      /*
-      for {
-        thisIteration <- (1 to runProperties.repeat).toList.flatMap(iterNum => execTestsParallel(iterNum, dbConProps, sqLoadConf))
-
-        r = v.map(thisList =>
-           Task(for {
-             ri <- thisList
-           } yield ri)
-        )
-      } yield ??? //thisIteration
-*/
-
 
   /* ok2:
 
@@ -253,9 +233,7 @@ object PgResearch extends App {
 
   */
 
-
   /* ok:
-
       (runProperties, dbConProps, sqLoadConf) =>
         for {
           sqTestResults :List[Seq[PgTestResult]] <-
@@ -297,6 +275,8 @@ object PgResearch extends App {
         case _ :runAsSeq.type => seqExec(runProperties,dbConProps,sqLoadConf)
         case _ :runAsSeqPar.type => seqparExec(runProperties,dbConProps,sqLoadConf)
         case _ :runAsPar.type => parExec(runProperties,dbConProps,sqLoadConf)
+        case _ :runAsParSeq.type => parSeqExec(runProperties,dbConProps,sqLoadConf)
+        case _ :runAsParPar.type => ???
       }
       tEnd <- clock.currentTime(TimeUnit.MILLISECONDS)
       testAgrResult :PgTestResultAgr = PgTestResultAgr(sqTestResults,tEnd-tBegin)
