@@ -38,8 +38,8 @@ object PgTestExecuter {
     val columns: IndexedSeq[(String,String)] = (1 to pgrs.getMetaData.getColumnCount)
       .map(cnum => (pgrs.getMetaData.getColumnName(cnum),pgrs.getMetaData.getColumnTypeName(cnum)))
 
-    val results: Iterator[IndexedSeq[String]] = Iterator.continually(pgrs).takeWhile(_.next()).map{ rs =>
-      columns.map(cname => rs.getString(cname._1))
+    val results: Iterator[IndexedSeq[String]] = Iterator.continually(pgrs).takeWhile(_.next()).map{
+      rs => columns.map(cname => rs.getString(cname._1))
     }
     val rowsCnt = results.size
     val tFetch = System.currentTimeMillis

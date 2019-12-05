@@ -9,6 +9,7 @@ lazy val Versions = new {
   val zioVers = "1.0.0-RC17"
   val circeVers = "0.11.1"
   val poiVers = "4.1.0"
+  val dbcp2Vers = "2.7.0"
 }
 
 scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked")
@@ -23,7 +24,8 @@ libraryDependencies ++= Seq(
   "ch.qos.logback" % "logback-classic" % "1.2.3",
   "com.typesafe" % "config" % "1.3.4",
   "org.postgresql" % "postgresql" % Versions.pgVers,
-  "dev.zio" %% "zio" % Versions.zioVers
+  "dev.zio" %% "zio" % Versions.zioVers,
+  "org.apache.commons" % "commons-dbcp2" % Versions.dbcp2Vers
 )
 
 libraryDependencies ++= Seq(

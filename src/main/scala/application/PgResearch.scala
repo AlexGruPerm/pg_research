@@ -9,7 +9,7 @@ import saveresults.PgSaveResults
 import testexec.PgTestExecuter
 import zio.clock.Clock
 import zio.console._
-import zio.{Task, _}
+import zio.{Task, ZIO, _}
 
 
 
@@ -31,6 +31,8 @@ object PgResearch extends App {
    * ZIO lets you timeout any effect using the ZIO#timeout method,
    *
    */
+
+    //todo: Add connection pooling - https://devcenter.heroku.com/articles/database-connection-pooling-with-scala
 
   //add new types parseq, parpar.
   def run(args: List[String]): ZIO[Console with Clock, Nothing, Int] = {
@@ -84,7 +86,8 @@ object PgResearch extends App {
       for {
         pgSess: pgSess <- (new PgConnection).sess(dbConProps)
         sqTestResults: Seq[PgTestResult] <-
-          IO.sequence(
+          //IO.sequence(
+          ZIO.collectAll(
             (1 to runProperties.repeat).flatMap(
               itn => sqLoadConf.map(lc => PgTestExecuter.exec(itn, pgSess, lc))
             )
@@ -122,7 +125,8 @@ object PgResearch extends App {
             for {
               pgSess: pgSess <- (new PgConnection).sess(dbConProps)
               sqTestResults: Seq[PgTestResult] <-
-                IO.sequence(
+                //IO.sequence(
+                 ZIO.collectAll(
                   sqLoadConf.map(lc => PgTestExecuter.exec(thisIter, pgSess, lc))
                 )
             } yield sqTestResults
@@ -155,12 +159,10 @@ object PgResearch extends App {
   private val execTestsParallel: (Int, PgConnectProp, Seq[PgLoadConf]) => Task[Seq[PgTestResult]] =
     (iterNum, dbConProps, sqLoadConf) =>
       ZIO.collectAllPar(
-        sqLoadConf.map( lc => {
-                                for {
+        sqLoadConf.map( lc => for {
                                   thisSess <- (new PgConnection).sess(dbConProps)
                                   tr :PgTestResult <- PgTestExecuter.exec(iterNum, thisSess, lc)
                                 } yield tr
-                              }
         )
       )
 
@@ -215,16 +217,37 @@ object PgResearch extends App {
 
    */
 
-
   private val seqparExec: (PgRunProp, PgConnectProp, Seq[PgLoadConf]) => Task[Seq[PgTestResult]] =
     (runProperties, dbConProps, sqLoadConf) =>
       for {
-        sqTestResults: List[Seq[PgTestResult]] <-
-          IO.collectAll(
-            (1 to runProperties.repeat).map(thisIter => execTestsParallel(thisIter, dbConProps, sqLoadConf))
-          )
-        r <- Task(sqTestResults.flatten)
-      } yield r
+        sq :Seq[Seq[PgTestResult]] <-
+            (1 to runProperties.repeat).toList.map(thisIter =>
+                                                              ZIO.collectAllPar(
+                                                                sqLoadConf.map(lc => for {
+                                                                  thisSess <- (new PgConnection).sess(dbConProps)
+                                                                  tr: PgTestResult <- PgTestExecuter.exec(thisIter, thisSess, lc)
+                                                                } yield tr
+                                                                ))
+        )
+        //seqOfSeqParEffects <- sq
+      sqTestResults <- ZIO.collectAll(sq)
+      } yield sqTestResults
+
+
+  /* ok4:
+
+          sqTestResults <- ZIO.collectAll(
+            (1 to runProperties.repeat).toList.map(thisIter =>
+            ZIO.collectAllPar(
+              sqLoadConf.map(lc => for {
+                thisSess <- (new PgConnection).sess(dbConProps)
+                tr: PgTestResult <- PgTestExecuter.exec(thisIter, thisSess, lc)
+              } yield tr
+              ))
+        ))
+
+  */
+
 
 /* ok3:
 
@@ -274,6 +297,17 @@ object PgResearch extends App {
       _ <- putStrLn(s"Connection opened - ${!pgSes.sess.isClosed}")
     } yield ()
 
+  /**
+   *  Get max_connections from pg config
+  */
+  private val checkDbMaxConnections : Task[PgConnectProp] => ZIO[Console, Throwable, Unit] = TdbConProps =>
+    for {
+      dbConProps <- TdbConProps
+      settings :PgSettings <- (new PgConnection).getMaxConns(dbConProps)
+      //todo: fix problem with reading sourceFile, contains Backslash
+      //todo: example: /pgdb/dbfiles/pgsql/11/data/postgresql.conf
+      _ <- putStrLn(s"Config : max_connections = ${settings.maxConn} conf : ${settings.sourceFile}")
+    } yield ()
 
   private val PgResearchLive : List[String] => ZIO[Console with Clock, Throwable, PgTestResultAgr] =
     args => for {
@@ -283,6 +317,7 @@ object PgResearch extends App {
       dbConProps :PgConnectProp <- pgcp
       sqLoadConf :Seq[PgLoadConf] <- PgLoadConfReader.getLoadItems(fileName)
       _ <- checkDbConnectCredits(pgcp)
+      _ <- checkDbMaxConnections(pgcp)
       runProperties :PgRunProp <- PgLoadConfReader.getPgRunProp(fileName)
       _ <- putStrLn(s"Running in mode - ${runProperties.runAs} iterations = ${runProperties.repeat}")
       tBegin <- clock.currentTime(TimeUnit.MILLISECONDS)
