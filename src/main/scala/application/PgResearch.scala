@@ -117,7 +117,7 @@ object PgResearch extends App {
   private val parSeqExec: (PgRunProp, PgConnectProp, Seq[PgLoadConf]) => Task[Seq[PgTestResult]] =
     (runProperties, dbConProps, sqLoadConf) =>
       for {
-        sqTestResults :List[List[PgTestResult]] <- ZIO.collectAllPar(
+        sqTestResults <- ZIO.collectAllPar(
           (1 to runProperties.repeat).toList.map(thisIter =>
             for {
               pgSess: pgSess <- (new PgConnection).sess(dbConProps)

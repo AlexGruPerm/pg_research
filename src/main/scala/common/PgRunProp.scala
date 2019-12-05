@@ -31,6 +31,8 @@ object PgRunProp {
        case "seq" => PgRunProp(runAsSeq,repeat)
        case "seqpar" => PgRunProp(runAsSeqPar,repeat)
        case "par" => PgRunProp(runAsPar,repeat)
+       case "parseq" => PgRunProp(runAsParSeq,repeat)
+       case "parpar" => PgRunProp(runAsParPar,repeat)
        case _ => PgRunProp(runAsSeq,repeat)
      }
   }
