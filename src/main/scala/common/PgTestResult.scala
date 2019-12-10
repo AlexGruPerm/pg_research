@@ -15,7 +15,7 @@ case class PgTestResult(iterNum :Int,
                         durTotalMs: Long,
                         numRows: Int) {
   override def toString =
-    s" iter : [$iterNum] tn : [${loadConf.testNum}] pid=[$pid] startTs [$startTs] " +
+    s" iter : [$iterNum] test : [${loadConf.testNum}] pid=[$pid] startTs [$startTs] endTs [$endTs] " +
       s"${loadConf.testName}   " +
       s"columns = ${cursorColumns.size} " +
       s"rows = $numRows " +

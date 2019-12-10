@@ -41,11 +41,11 @@ trait jdbcSession {
   /**
    * Return Connection to Postgres or Exception
   */
-  def createPgSess: PgConnectProp => Task[pgSess] = (cp) =>
+  def createPgSess: (Int, PgConnectProp) => Task[pgSess] = (iterNum, cp) =>
     Task {
       Class.forName(cp.driver)
       val c :Connection = DriverManager.getConnection(cp.url, cp.username, cp.password)
-      c.setClientInfo("ApplicationName","PgResearch")
+      c.setClientInfo("ApplicationName",s"PgResearch-$iterNum")
       val stmt: Statement = c.createStatement
       val rs: ResultSet = stmt.executeQuery("SELECT pg_backend_pid() as pg_backend_pid")
       rs.next()
@@ -62,12 +62,12 @@ trait jdbcSession {
 class PgConnection extends jdbcSession {
 
   //todo: read PgConnectProp properties single time from input json.
-  val sess : PgConnectProp => Task[pgSess] = conProp =>
-    createPgSess(conProp)
+  val sess : (Int,PgConnectProp) => Task[pgSess] = (iterNum,conProp) =>
+    createPgSess(iterNum,conProp)
 
   val getMaxConns : PgConnectProp => Task[PgSettings] = conProp =>
   for {
-    pgSes :pgSess <- sess(conProp)
+    pgSes :pgSess <- sess(0,conProp)
     maxConn <- Task{
       pgSes.sess.setAutoCommit(false)
       //setting as MAXCONN, SOURCEFILE

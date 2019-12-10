@@ -45,7 +45,7 @@ object PgResearch extends App {
       },
       s => {
         println("Success");
-        s.sqPgTestResult.foreach(println);
+        s.sqPgTestResult.sortBy(r => r.endTs).foreach(println);
         println("-----------------------------");
         println(s"Common duration ${s.commDurMs} ms.")
         println(s);
@@ -84,7 +84,7 @@ object PgResearch extends App {
   private val seqExec: (PgRunProp, PgConnectProp, Seq[PgLoadConf]) => Task[Seq[PgTestResult]] =
     (runProperties, dbConProps, sqLoadConf) => {
       for {
-        pgSess: pgSess <- (new PgConnection).sess(dbConProps)
+        pgSess: pgSess <- (new PgConnection).sess(0,dbConProps)
         sqTestResults: Seq[PgTestResult] <-
           //IO.sequence(
           ZIO.collectAll(
@@ -106,7 +106,7 @@ object PgResearch extends App {
             .map(
               lc =>
                 for {
-                  thisSess <- (new PgConnection).sess(dbConProps)
+                  thisSess <- (new PgConnection).sess(lc._1, dbConProps)
                   tr <- PgTestExecuter.exec(lc._1, thisSess, lc._2)
                 } yield tr
             )
@@ -123,7 +123,7 @@ object PgResearch extends App {
         sqTestResults <- ZIO.collectAllPar(
           (1 to runProperties.repeat).toList.map(thisIter =>
             for {
-              pgSess: pgSess <- (new PgConnection).sess(dbConProps)
+              pgSess: pgSess <- (new PgConnection).sess(thisIter,dbConProps)
               sqTestResults: Seq[PgTestResult] <-
                 //IO.sequence(
                  ZIO.collectAll(
@@ -160,27 +160,11 @@ object PgResearch extends App {
     (iterNum, dbConProps, sqLoadConf) =>
       ZIO.collectAllPar(
         sqLoadConf.map( lc => for {
-                                  thisSess <- (new PgConnection).sess(dbConProps)
+                                  thisSess <- (new PgConnection).sess(iterNum, dbConProps)
                                   tr :PgTestResult <- PgTestExecuter.exec(iterNum, thisSess, lc)
                                 } yield tr
         )
       )
-
-
-
-    /*
-    OK !!!
-  private val execTestsParallel: (Int, PgConnectProp, Seq[PgLoadConf]) => Task[Seq[PgTestResult]] =
-    (iterNum, dbConProps, sqLoadConf) =>
-      ZIO.collectAllPar(
-        sqLoadConf.map( lc =>
-          for {
-            thisSess <- (new PgConnection).sess(dbConProps)
-            tr :PgTestResult <- PgTestExecuter.exec(iterNum, thisSess, lc)
-          } yield tr
-        )
-      )
-  */
 
   /** docs:
    * You can execute two effects in sequence with the flatMap method
@@ -217,9 +201,33 @@ object PgResearch extends App {
 
    */
 
-  private val seqparExec: (PgRunProp, PgConnectProp, Seq[PgLoadConf]) => Task[Seq[PgTestResult]] =
-    (runProperties, dbConProps, sqLoadConf) => {
+    /** 3 parameters
+     *   URIO.bracket[Console, Unit, List[Result]](
+     *       console.putStrLn(s"Opening database connection $iteration"),
+     * _ => console.putStrLn(s"Closing database connection $iteration"),
+     * _ => URIO.foreachPar(values)(value => execute(iteration, value))
+     * )
+    */
 
+  private val execute: (Int, PgConnectProp, PgLoadConf) => Task[PgTestResult] =
+    (iterNum, dbConProps, lc) =>
+      (new PgConnection).sess(iterNum,dbConProps).flatMap(thisSess => PgTestExecuter.exec(iterNum, thisSess, lc))
+
+  private val executeSession :(Int, PgConnectProp,  Seq[PgLoadConf]) => Task[Seq[PgTestResult]] =
+    (iteration, dbConProps, sqLoadConf) =>
+      Task.foreachPar(sqLoadConf)(lc => execute(iteration, dbConProps, lc))
+
+  private val seqparExec: (PgRunProp, PgConnectProp, Seq[PgLoadConf]) => Task[Seq[PgTestResult]] =
+    (runProperties, dbConProps, sqLoadConf) =>
+      Task.foreach(List.range(1, runProperties.repeat + 1)) {
+        iteration => executeSession(iteration, dbConProps, sqLoadConf)
+      }
+        .map(_.flatten)
+
+
+
+  /*
+    {
       val xz :Seq[Task[Seq[PgTestResult]]] = (1 to runProperties.repeat).map(thisTaskIter =>
         ZIO.collectAllPar(
           sqLoadConf.map(lc => for {
@@ -235,7 +243,7 @@ object PgResearch extends App {
       val res :Task[Seq[PgTestResult]]  = ZIO.collectAll(r) //collectAll convert Seq[Task[... into Task[Seq[...
       res
     }
-
+*/
 
     /*
       ZIO.collectAll(//remove List( added by yield around return type
@@ -314,7 +322,7 @@ object PgResearch extends App {
   private val checkDbConnectCredits : Task[PgConnectProp] => ZIO[Console, Throwable, Unit] = TdbConProps =>
     for {
       dbConProps <- TdbConProps
-      pgSes: pgSess <- (new PgConnection).sess(dbConProps)
+      pgSes: pgSess <- (new PgConnection).sess(0,dbConProps)
       _ <- putStrLn(s"Connection opened - ${!pgSes.sess.isClosed}")
     } yield ()
 
