@@ -125,7 +125,6 @@ object PgResearch extends App {
             for {
               pgSess: pgSess <- (new PgConnection).sess(thisIter,dbConProps)
               sqTestResults: Seq[PgTestResult] <-
-                //IO.sequence(
                  ZIO.collectAll(
                   sqLoadConf.map(lc => PgTestExecuter.exec(thisIter, pgSess, lc))
                 )
@@ -133,6 +132,8 @@ object PgResearch extends App {
           )
         )
       } yield sqTestResults.flatten
+
+
 
   //todo: remove all xyExec functions in separate file.
 
@@ -217,104 +218,12 @@ object PgResearch extends App {
     (iteration, dbConProps, sqLoadConf) =>
       Task.foreachPar(sqLoadConf)(lc => execute(iteration, dbConProps, lc))
 
-  private val seqparExec: (PgRunProp, PgConnectProp, Seq[PgLoadConf]) => Task[Seq[PgTestResult]] =
+  private val seqParExec: (PgRunProp, PgConnectProp, Seq[PgLoadConf]) => Task[Seq[PgTestResult]] =
     (runProperties, dbConProps, sqLoadConf) =>
       Task.foreach(List.range(1, runProperties.repeat + 1)) {
         iteration => executeSession(iteration, dbConProps, sqLoadConf)
       }
         .map(_.flatten)
-
-
-
-  /*
-    {
-      val xz :Seq[Task[Seq[PgTestResult]]] = (1 to runProperties.repeat).map(thisTaskIter =>
-        ZIO.collectAllPar(
-          sqLoadConf.map(lc => for {
-            thisSess <- (new PgConnection).sess(dbConProps)
-            tr: PgTestResult <- PgTestExecuter.exec(thisTaskIter, thisSess, lc)
-          } yield tr
-          )
-        )
-      )
-
-      val t :Task[Seq[Seq[PgTestResult]]] = ZIO.collectAll(xz)
-      val r :Seq[Task[PgTestResult]] = t
-      val res :Task[Seq[PgTestResult]]  = ZIO.collectAll(r) //collectAll convert Seq[Task[... into Task[Seq[...
-      res
-    }
-*/
-
-    /*
-      ZIO.collectAll(//remove List( added by yield around return type
-      for {
-        iters :Task[Int] <- (1 to runProperties.repeat).toList.map(Task(_)) // Seq[Task[Int]] flatMap Task[Int]
-        ttListSq :Seq[Task[Seq[PgTestResult]]] = iters.map(thisTaskIter => ZIO.collectAllPar(    // Seq[Task[Int]] map -> Task[Int]  iters.map Int Task[Seq[PgTestResult]]
-                                                                                              sqLoadConf.map(lc => for {
-                                                                                                thisSess <- (new PgConnection).sess(dbConProps)
-                                                                                                tr: PgTestResult <- PgTestExecuter.exec(thisTaskIter, thisSess, lc)
-                                                                                               } yield tr
-                                                                                              )
-                                                                                            )
-                    ) // List[Task[Seq[PgTestResult]]]
-        tsRes = ZIO.collectAll(ttListSq)
-        //tskSeqRes :Task[Seq[PgTestResult]] = ttListSq
-       } yield tsRes  // + List( return type )
-      )
-  */
-
-  /* ok4:
-
-          sqTestResults <- ZIO.collectAll(
-            (1 to runProperties.repeat).toList.map(thisIter =>
-            ZIO.collectAllPar(
-              sqLoadConf.map(lc => for {
-                thisSess <- (new PgConnection).sess(dbConProps)
-                tr: PgTestResult <- PgTestExecuter.exec(thisIter, thisSess, lc)
-              } yield tr
-              ))
-        ))
-
-  */
-
-
-/* ok3:
-
-    (runProperties, dbConProps, sqLoadConf) =>
-      for {
-        sqTestResults: List[Seq[PgTestResult]] <-
-          IO.collectAll(
-            (1 to runProperties.repeat).map(thisIter => execTestsParallel(thisIter, dbConProps, sqLoadConf))
-          )
-        r <- Task(sqTestResults.flatten)
-      } yield r
-
-*/
-
-  /* ok2:
-
-      (runProperties, dbConProps, sqLoadConf) =>
-        for {
-             thisIteration <- Task(1 to runProperties.repeat)
-               .flatMap(_ => execTestsParallel(dbConProps, sqLoadConf))
-        } yield thisIteration
-
-  */
-
-  /* ok:
-      (runProperties, dbConProps, sqLoadConf) =>
-        for {
-          sqTestResults :List[Seq[PgTestResult]] <-
-            IO.collectAll(
-              (1 to runProperties.repeat)
-                .map(
-                  _ => execTestsParallel(dbConProps, sqLoadConf)
-                )
-            )
-          r  <- Task(sqTestResults.flatMap(xst => xst))
-        } yield r
-
-*/
 
   /**
    *  Check that connect cridentionals are valid.
@@ -351,9 +260,9 @@ object PgResearch extends App {
       _ <- putStrLn(s"Running in mode - ${runProperties.runAs} iterations = ${runProperties.repeat}")
       tBegin <- clock.currentTime(TimeUnit.MILLISECONDS)
       sqTestResults :Seq[PgTestResult] <- runProperties.runAs
-      match {
+      match {                    //(Task.foreach(List(1,2,3))(extIter => seqExec(runProperties,dbConProps,sqLoadConf))).map(_.flatten)
         case _ :runAsSeq.type => seqExec(runProperties,dbConProps,sqLoadConf)
-        case _ :runAsSeqPar.type => seqparExec(runProperties,dbConProps,sqLoadConf)
+        case _ :runAsSeqPar.type => seqParExec(runProperties,dbConProps,sqLoadConf)
         case _ :runAsPar.type => parExec(runProperties,dbConProps,sqLoadConf)
         case _ :runAsParSeq.type => parSeqExec(runProperties,dbConProps,sqLoadConf)
         case _ :runAsParPar.type => parParExec(runProperties,dbConProps,sqLoadConf)
