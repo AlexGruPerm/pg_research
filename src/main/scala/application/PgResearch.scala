@@ -32,7 +32,7 @@ object PgResearch extends App {
    *
    */
 
-    //todo: Add connection pooling - https://devcenter.heroku.com/articles/database-connection-pooling-with-scala
+  //todo: Add connection pooling - https://devcenter.heroku.com/articles/database-connection-pooling-with-scala
 
   //add new types parseq, parpar.
   def run(args: List[String]): ZIO[Console with Clock, Nothing, Int] = {
@@ -72,7 +72,7 @@ object PgResearch extends App {
     if (argsList.length == 0)
     //todo: don't forget replace succeed with fail.
     //Task.fail(new Exception("No input test config file, use: scala PgResearch <filename.json>"))
-      //Task.succeed("/home/gdev/data/home/data/PROJECTS/pg_research/src/main/resources/loadconf.json")
+    //Task.succeed("/home/gdev/data/home/data/PROJECTS/pg_research/src/main/resources/loadconf.json")
       Task.succeed("C:\\pg_research\\src\\main\\resources\\loadconf.json")
     else
       Task.succeed(argsList(0))
@@ -82,18 +82,17 @@ object PgResearch extends App {
    * For sequential execution of procedures.
    */
   private val seqExec: (PgRunProp, PgConnectProp, Seq[PgLoadConf]) => Task[Seq[PgTestResult]] =
-    (runProperties, dbConProps, sqLoadConf) => {
-      for {
-        pgSess: pgSess <- (new PgConnection).sess(0,dbConProps)
-        sqTestResults: Seq[PgTestResult] <-
-          //IO.sequence(
-          ZIO.collectAll(
-            (1 to runProperties.repeat).flatMap(
-              itn => sqLoadConf.map(lc => PgTestExecuter.exec(itn, pgSess, lc))
-            )
-          )
-      } yield sqTestResults
-    }
+    (runProperties, dbConProps, sqLoadConf) =>
+      (new PgConnection).sess(0, dbConProps).flatMap {
+        thisSess =>
+          Task.foreach(1 to runProperties.repeat) {
+            iteration =>
+              Task.foreach(sqLoadConf) {
+                lc => PgTestExecuter.exec(iteration, thisSess, lc)
+              }
+          }.map(_.flatten)
+      }
+
 
   /**
    *  For parallel execution of procedures.
@@ -112,6 +111,19 @@ object PgResearch extends App {
             )
         )
       } yield sqTestResults
+
+  //todo: remove all xyExec functions in separate file.
+  /**
+   *  Run all iterations inparallel with degree = runProperties.repeat
+   *  and inside iterations run test parallel
+   */
+  private val parParExec: (PgRunProp, PgConnectProp, Seq[PgLoadConf]) => Task[Seq[PgTestResult]] =
+    (runProperties, dbConProps, sqLoadConf) =>
+      Task.foreachPar(1 to runProperties.repeat){
+        iteration =>  execTestsParallel(iteration, dbConProps, sqLoadConf)
+      }.map(_.flatten)
+
+
 
   /**
    *  Run all iterations inparallel with degree = runProperties.repeat
@@ -132,25 +144,6 @@ object PgResearch extends App {
           )
         )
       } yield sqTestResults.flatten
-
-
-
-  //todo: remove all xyExec functions in separate file.
-
-  /**
-   *  Run all iterations inparallel with degree = runProperties.repeat
-   *  and inside iterations run test parallel
-   */
-  private val parParExec: (PgRunProp, PgConnectProp, Seq[PgLoadConf]) => Task[Seq[PgTestResult]] =
-    (runProperties, dbConProps, sqLoadConf) =>
-      for {
-        sqTestResults <- ZIO.collectAllPar(
-          (1 to runProperties.repeat).toList.map(thisIter => execTestsParallel(thisIter, dbConProps, sqLoadConf)
-          )
-        )
-      } yield sqTestResults.flatten
-
-
 
   /**
    * execute test in parallel,
@@ -220,7 +213,7 @@ object PgResearch extends App {
 
   private val seqParExec: (PgRunProp, PgConnectProp, Seq[PgLoadConf]) => Task[Seq[PgTestResult]] =
     (runProperties, dbConProps, sqLoadConf) =>
-      Task.foreach(List.range(1, runProperties.repeat + 1)) {
+      Task.foreach(1 to runProperties.repeat/*List.range(1, runProperties.repeat + 1)*/) {
         iteration => executeSession(iteration, dbConProps, sqLoadConf)
       }
         .map(_.flatten)
@@ -272,28 +265,5 @@ object PgResearch extends App {
       saveResStatus <- PgSaveResults.saveResIntoFiles(testAgrResult)
       _ <- putStrLn(s"Results saved in file $saveResStatus")
     } yield testAgrResult
-
-
-  /*
-        fileName <- getInputParamFileName(args)
-      _ <- putStrLn(s"Begin with config file $fileName")
-      pgcp = PgLoadConfReader.getDbConnectionProps(fileName)
-      dbConProps :PgConnectProp <- pgcp
-      sqLoadConf :Seq[PgLoadConf] <- PgLoadConfReader.getLoadItems(fileName)
-      _ <- checkDbConnectCredits(pgcp)
-      runProperties :PgRunProp <- PgLoadConfReader.getPgRunProp(fileName)
-      _ <- putStrLn(s"Running in mode - ${runProperties.runAs} iterations = ${runProperties.repeat}")
-      tBegin <- clock.currentTime(TimeUnit.MILLISECONDS)
-      sqTestResults :Seq[PgTestResult] <- runProperties.runAs
-      match {
-        case _ :runAsSeq.type => seqExec(runProperties,dbConProps,sqLoadConf)
-        case _ :runAsSeqPar.type => seqparExec(runProperties,dbConProps,sqLoadConf)
-        case _ :runAsPar.type => parExec(runProperties,dbConProps,sqLoadConf)
-      }
-      tEnd <- clock.currentTime(TimeUnit.MILLISECONDS)
-      testAgrResult :PgTestResultAgr = PgTestResultAgr(sqTestResults,tEnd-tBegin)
-      saveResStatus <- PgSaveResults.saveResIntoFiles(testAgrResult)
-      _ <- putStrLn(s"Results saved in file $saveResStatus")
-*/
 
 }

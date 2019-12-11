@@ -1,5 +1,9 @@
-import zio.{Task}
 
+List.range(1, 3 + 1).foreach(println)
+
+(1 to 3).foreach(println)
+
+/*
 /**
  * Applies the function `f` to each element of the `Iterable[A]` in parallel,
  * and returns the results in a new `List[B]`.
@@ -34,4 +38,4 @@ in ZIO.Scala
 final def collectAllPar[R, E, A](as: Iterable[ZIO[R, E, A]]): ZIO[R, E, List[A]] =
   foreachPar[R, E, ZIO[R, E, A], A](as)(ZIO.identityFn)
 
-
+*/
