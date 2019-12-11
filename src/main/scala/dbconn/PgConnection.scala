@@ -1,6 +1,7 @@
 package dbconn
 
 import java.sql.{Connection, DriverManager, ResultSet, Statement}
+import java.util.Properties
 
 import common.{PgConnectProp, PgSettings}
 import org.slf4j.LoggerFactory
@@ -43,8 +44,32 @@ trait jdbcSession {
   */
   def createPgSess: (Int, PgConnectProp) => Task[pgSess] = (iterNum, cp) =>
     Task {
-      Class.forName(cp.driver)
-      val c :Connection = DriverManager.getConnection(cp.url, cp.username, cp.password)
+      //Class.forName(cp.driver)
+
+      val url :String = cp.url
+      val props = new Properties()
+      props.setProperty("user",cp.username)
+      props.setProperty("password",cp.password)
+
+      //val c :Connection = DriverManager.getConnection(url, props)
+      //-----------------------------------------------------------------------------------
+      /*
+      import com.jcraft.jsch.JSch
+      val config = new java.util.Properties()
+      config.put("StrictHostKeyChecking", "no")
+      val session :com.jcraft.jsch.Session =(new JSch()).getSession("contractor", "212.33.224.13", 22008)
+      session.setPassword("4rgpiqmsx13f")
+      session.setConfig(config)
+      session.connect()
+      session.setPortForwardingL(6786, "172.17.100.53", 5432)
+
+      //Class.forName(cp.driver)
+      Class.forName(cp.driver).newInstance()
+      props.setProperty("loglevel", "2")
+      val c :Connection = DriverManager.getConnection("jdbc:postgresql://PRM-WS-0006.MOON.LAN:6786/db_ris_mkrpk", props)
+      */
+      //-----------------------------------------------------------------------------------
+      val c :Connection = DriverManager.getConnection(cp.url, props)
       c.setClientInfo("ApplicationName",s"PgResearch-$iterNum")
       val stmt: Statement = c.createStatement
       val rs: ResultSet = stmt.executeQuery("SELECT pg_backend_pid() as pg_backend_pid")

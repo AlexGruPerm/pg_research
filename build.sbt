@@ -10,6 +10,7 @@ lazy val Versions = new {
   val circeVers = "0.11.1"
   val poiVers = "4.1.0"
   val dbcp2Vers = "2.7.0"
+  val jschVers = "0.1.55"
 }
 
 scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked")
@@ -26,6 +27,7 @@ libraryDependencies ++= Seq(
   "org.postgresql" % "postgresql" % Versions.pgVers,
   "dev.zio" %% "zio" % Versions.zioVers,
   "org.apache.commons" % "commons-dbcp2" % Versions.dbcp2Vers
+  //"com.jcraft" % "jsch" % Versions.jschVers  for SSH Tunnel to postgres.
 )
 
 libraryDependencies ++= Seq(
