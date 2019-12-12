@@ -34,13 +34,16 @@ object PgSaveResults {
     )
 
 
+
   /**
    *  Save results into output files.
    */
   val saveResIntoFiles : PgTestResultAgr => Task[String] =  sqPgTestResult => {
-    val saveResStatus = for {
+    for {
      str <- saveResIntoJsonFile(sqPgTestResult)
+      _ <- console.putStrLn(s" saveResIntoJsonFile res=$str")
     } yield str
+
     Task("Success saved output files : output_02122019_170005.json, output_02122019_170005.xls")
   }
 
@@ -64,11 +67,13 @@ object PgSaveResults {
   */
     //todo: make save in ZIO witj bracer/breaker
   private val saveResIntoJsonFile : PgTestResultAgr => Task[String] =  sqPgTestResult => {
-    val resAsJson = sqPgTestResult.asJson
-
-    writeFile("output.json",resAsJson.asString.getOrElse("{}"))
-    Task( "output.json")
-  }
+    val resAsJson = List(1, 2, 3).asJson//sqPgTestResult.asJson
+      println(s"RES0 = $resAsJson")
+      println(s"RES1 size = ${sqPgTestResult.sqPgTestResult.size}")
+      println(s"RES2 = ${resAsJson.asString}")
+      writeFile("output.json",resAsJson.asString.getOrElse("{}"))
+      Task( "output.json")
+    }
 
 
 }

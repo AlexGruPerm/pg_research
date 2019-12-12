@@ -1,11 +1,10 @@
 package common
 
-
 /**
  *  Preset common tests result and individual tests results as  sqPgTestResult
 */
 //commonDurationMs :ZIO[Clock, Nothing, Long]
-case class PgTestResultAgr(sqPgTestResult :Seq[PgTestResult],commDurMs :Long){
+ case class PgTestResultAgr(sqPgTestResult :Seq[PgTestResult],commDurMs :Long){
 
   def sumExecDur :Long = sqPgTestResult.map(tr => tr.durExecMs).sum
   def sumFetchDur :Long = sqPgTestResult.map(tr => tr.durFetchMs).sum
