@@ -17,7 +17,7 @@
   },
   "runprops": {
     "runAs" : "parpar",
-    "repeat" : 5,
+    "repeat" : 10,
     "qtimeoutms" : 500
   },
   "items": [
