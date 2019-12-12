@@ -17,20 +17,16 @@ package common
 sealed trait runAsType
 final case object runAsSeq extends runAsType
 final case object runAsSeqPar extends runAsType
-final case object runAsPar extends runAsType
 final case object runAsParSeq extends runAsType
 final case object runAsParPar extends runAsType
-
 
 case class PgRunProp(runAs :runAsType, repeat :Int)
 
 object PgRunProp {
   def apply(runAs :String, repeat :Int) : PgRunProp = {
-    //???? todo : require(Seq("seq","seqpar","par").contains(runAs.toLowerCase))
      runAs.toLowerCase match {
        case "seq" => PgRunProp(runAsSeq,repeat)
        case "seqpar" => PgRunProp(runAsSeqPar,repeat)
-       case "par" => PgRunProp(runAsPar,repeat)
        case "parseq" => PgRunProp(runAsParSeq,repeat)
        case "parpar" => PgRunProp(runAsParPar,repeat)
        case _ => PgRunProp(runAsSeq,repeat)
