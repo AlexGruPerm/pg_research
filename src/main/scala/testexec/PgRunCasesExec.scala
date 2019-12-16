@@ -3,6 +3,14 @@ package testexec
 import common._
 import dbconn.PgConnection
 import zio.Task
+import scala.language.postfixOps
+
+/*
+import common._
+import dbconn.PgConnection
+import zio.Task
+import scala.language.postfixOps
+*/
 
 object PgRunCasesExec {
   /**

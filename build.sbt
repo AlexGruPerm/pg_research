@@ -8,7 +8,7 @@ lazy val Versions = new {
   val pgVers = "42.2.5"
   val zioVers = "1.0.0-RC17"
   val circeVers = "0.11.1"
-  val poiVers = "4.1.0"
+  val poiVers = "4.1.1"
   val dbcp2Vers = "2.7.0"
   val jschVers = "0.1.55"
 }

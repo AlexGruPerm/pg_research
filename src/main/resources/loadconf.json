@@ -17,7 +17,7 @@
   },
   "runprops": {
     "runAs" : "seq",
-    "repeat" : 5,
+    "repeat" : 3,
     "qtimeoutms" : 500
   },
   "items": [
