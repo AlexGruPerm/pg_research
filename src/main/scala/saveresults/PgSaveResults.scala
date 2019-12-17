@@ -142,17 +142,6 @@ object PgSaveResults extends TimestampConverter {
         }
       }
 
-
-    /*
-    for(rowNumber <- (1 to 10)) {
-      val row = sheet.createRow(rowNumber)
-      row.createCell(0).setCellValue(s"row name $rowNumber")
-      for(idx <- 1 to 10) {
-        row.createCell(idx).setCellValue(s"$idx _ $rowNumber")
-      }
-    }
-    */
-
     sheet.setDefaultColumnWidth(20)
     val resultFile = new FileOutputStream(xlsFileName)
     wb.write(resultFile)
