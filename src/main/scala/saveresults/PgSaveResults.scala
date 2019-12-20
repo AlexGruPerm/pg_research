@@ -36,11 +36,12 @@ object PgSaveResults extends TimestampConverter {
       ))
 
   implicit val encodePgTestResultAgr: Encoder[PgTestResultAgr] =
-    Encoder.forProduct6(
+    Encoder.forProduct7("runType",
       "cntDistPids","CommonDurMs",
       "sumExecDurMs","sumFetchDurMs", "sumTotalDurMs",
       "test_results")(u =>
-      (u.cntDistPids, u.commDurMs,
+      (u.runProp.getRunType,
+        u.cntDistPids, u.commDurMs,
         u.sumExecDur, u.sumFetchDur, u.sumTotalDur,
         u.sqPgTestResult)
     )
@@ -74,7 +75,7 @@ object PgSaveResults extends TimestampConverter {
   private val saveResIntoExcelFile : (String,PgTestResultAgr) => Task[String] = (fn,PgTestResults) => {
     val xlsFileName :String = fn+".xls"
     val wb = new XSSFWorkbook()
-    val sheet = wb.createSheet("Data")
+    val sheet = wb.createSheet(s"Data_${PgTestResults.runProp.getRunType}")
     val headerRow = sheet.createRow(0)
     val headerCornerCell = headerRow.createCell(0)
 

@@ -20,7 +20,16 @@ final case object runAsSeqPar extends runAsType
 final case object runAsParSeq extends runAsType
 final case object runAsParPar extends runAsType
 
-case class PgRunProp(runAs :runAsType, repeat :Int)
+case class PgRunProp(runAs :runAsType, repeat :Int){
+  def getRunType :String =
+    runAs match {
+      case _ :runAsSeq.type => "seq"
+      case _:runAsSeqPar.type => "seqpar"
+      case _:runAsParSeq.type => "parseq"
+      case _:runAsParPar.type => "parpar"
+      case _ => "nn"
+    }
+}
 
 object PgRunProp {
   def apply(runAs :String, repeat :Int) : PgRunProp = {

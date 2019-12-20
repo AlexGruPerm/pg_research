@@ -13,10 +13,10 @@
       {"ket": "parpar", "mean" : "run all iterations in parallel and inside iteration tests also in parallel."}
     ],
     "repeat" : "Count of iteration test running in general.",
-    "qtimeoutms" : "Global timeout in milliseconds that will be used for each query."
+    "qtimeoutms" : "Global timeout in milliseconds that will be used for each query. Useless."
   },
   "runprops": {
-    "runAs" : "seq",
+    "runAs" : "parseq",
     "repeat" : 5,
     "qtimeoutms" : 500
   },

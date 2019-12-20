@@ -63,14 +63,13 @@ object PgResearch extends App {
    * Get application input parameters and return Task[String] with input filename or fail
    * with Exception.
    */
-  private val getInputParamFileName: List[String] => Task[String] = argsList =>
+  private val getInputParamFileName: List[String] => Task[CmdLineParams] = argsList =>
     if (argsList.length == 0)
     //todo: don't forget replace succeed with fail.
-    //Task.fail(new Exception("No input test config file, use: scala PgResearch <filename.json>"))
-    //Task.succeed("/home/gdev/data/home/data/PROJECTS/pg_research/src/main/resources/loadconf.json")
-      Task.succeed("C:\\pg_research\\src\\main\\resources\\loadconf.json")
+      Task.succeed(CmdLineParams("run",Some("C:\\pg_research\\src\\main\\resources\\loadconf.json"),None,None))
+      //Task.succeed(CmdLineParams(argsList(0),...,Some("C:\\pg_research\\src\\main\\resources\\loadconf.json"),None,None))
     else
-      Task.succeed(argsList(0))
+      Task.succeed(CmdLineParams(argsList(0),Option(argsList(1)),Option(argsList(2)),Option(argsList(3)))/*argsList(0)*/)
 
   /**
    *  Check that connect credentials are valid.
@@ -94,19 +93,19 @@ object PgResearch extends App {
 
   private val PgResearchLive : List[String] => ZIO[Console with Clock, Throwable, PgTestResultAgr] =
     args => for {
-      fileName <- getInputParamFileName(args)
-      _ <- putStrLn(s"Begin with config file $fileName")
-      pgcp = PgLoadConfReader.getDbConnectionProps(fileName)
+      params :CmdLineParams <- getInputParamFileName(args)
+      _ <- putStrLn(s"Begin with config file ${params.confFile}")
+      pgcp = PgLoadConfReader.getDbConnectionProps(params.confFile.getOrElse(""))
       dbConProps :PgConnectProp <- pgcp
-      sqLoadConf :Seq[PgLoadConf] <- PgLoadConfReader.getLoadItems(fileName)
+      sqLoadConf :Seq[PgLoadConf] <- PgLoadConfReader.getLoadItems(params.confFile.getOrElse(""))
       _ <- checkDbConnectCredits(pgcp)
       _ <- checkDbMaxConnections(pgcp)
-      runProperties :PgRunProp <- PgLoadConfReader.getPgRunProp(fileName)
+      runProperties :PgRunProp <- PgLoadConfReader.getPgRunProp(params.confFile.getOrElse(""))
       _ <- putStrLn(s"Running in mode - ${runProperties.runAs} iterations = ${runProperties.repeat}")
       tBegin <- clock.currentTime(TimeUnit.MILLISECONDS)
       sqTestResults :Seq[PgTestResult] <- PgRunCasesExec.run(runProperties.runAs, runProperties, dbConProps, sqLoadConf)
       tEnd <- clock.currentTime(TimeUnit.MILLISECONDS)
-      testAgrResult :PgTestResultAgr = PgTestResultAgr(sqTestResults,tEnd-tBegin)
+      testAgrResult :PgTestResultAgr = PgTestResultAgr(sqTestResults,tEnd-tBegin,runProperties)
       saveResStatus <- PgSaveResults.saveResIntoFiles(testAgrResult)
       _ <- putStrLn(s"Results saved in file $saveResStatus")
     } yield testAgrResult
