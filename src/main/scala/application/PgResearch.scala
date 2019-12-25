@@ -64,10 +64,17 @@ object PgResearch extends App {
    * with Exception.
    */
   private val getInputParamFileName: List[String] => Task[CmdLineParams] = argsList =>
-    if (argsList.length == 0)
+    if (argsList.length == 0) {
     //todo: don't forget replace succeed with fail.
-      Task.succeed(CmdLineParams("run",Some("C:\\pg_research\\src\\main\\resources\\loadconf.json"),None,None))
+      //if (argsList(0)=="run") {
+        //Task.succeed(CmdLineParams("run", Some("C:\\pg_research\\src\\main\\resources\\loadconf.json"), None, None))
+      /*} else if (argsList(0)=="comp"){
+        Task.succeed(CmdLineParams("comp", None, Some(""), Some("")))
+      }
+      */
+      Task.succeed(CmdLineParams("comp", None, Some("C:\\pg_research\\23_12_2019_16_13_57.json"), Some("C:\\pg_research\\23_12_2019_16_14_42.json")))
       //Task.succeed(CmdLineParams(argsList(0),...,Some("C:\\pg_research\\src\\main\\resources\\loadconf.json"),None,None))
+    }
     else
       Task.succeed(CmdLineParams(argsList(0),Option(argsList(1)),Option(argsList(2)),Option(argsList(3)))/*argsList(0)*/)
 
@@ -81,6 +88,7 @@ object PgResearch extends App {
       _ <- putStrLn(s"Connection opened - ${!pgSes.sess.isClosed}")
     } yield ()
 
+
   /**
    *  Get max_connections from pg config
   */
@@ -90,6 +98,7 @@ object PgResearch extends App {
       settings :PgSettings <- (new PgConnection).getMaxConns(dbConProps)
       _ <- putStrLn(s"Config : max_connections = ${settings.maxConn} conf : ${settings.sourceFile}")
     } yield ()
+
 
   private val PgResearchLive : List[String] => ZIO[Console with Clock, Throwable, PgTestResultAgr] =
     args => for {
