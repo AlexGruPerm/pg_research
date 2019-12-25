@@ -96,7 +96,7 @@ object PgResearch extends App {
     for {
       dbConProps <- TdbConProps
       settings :PgSettings <- (new PgConnection).getMaxConns(dbConProps)
-      _ <- putStrLn(s"Config : max_connections = ${settings.maxConn} conf : ${settings.sourceFile}")
+      _ <- putStrLn(s"Configuration: max_connections = ${settings.maxConn} conf : ${settings.sourceFile}")
     } yield ()
 
 
