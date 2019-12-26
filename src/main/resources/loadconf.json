@@ -9,7 +9,7 @@
     "run_as" : [
       {"key": "seq", "mean" : "run tests sequential"},
       {"ket": "seqpar", "mean" : "run tests sequential by iterations and in parallel inside iterations with degree of parallelism equal tests count. (lightweight ZIO fibers)"},
-      {"ket": "parseq", "mean" : "run all iterations in parallel and inside iteration test running sequential."},
+      {"ket": "parseq", "mean" : "run all iterations in parallel and internal iterations running sequential."},
       {"ket": "parpar", "mean" : "run all iterations in parallel and inside iteration tests also in parallel."}
     ],
     "repeat" : "Count of iteration test running in general.",
