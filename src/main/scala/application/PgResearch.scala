@@ -46,7 +46,9 @@ object PgResearch extends App {
         Task.succeed(CmdLineParams("comp", None, Some(""), Some("")))
       }
       */
-      Task.succeed(CmdLineParams("comp", None, Some("C:\\pg_research\\23_12_2019_16_13_57.json"), Some("C:\\pg_research\\23_12_2019_16_14_42.json")))
+      Task.succeed(CmdLineParams("comp", None,
+        Some("C:\\pg_research\\26_12_2019_15_53_59.json"),
+        Some("C:\\pg_research\\26_12_2019_15_54_36.json")))
     }
     else
       Task.succeed(CmdLineParams(argsList(0),Option(argsList(1)),Option(argsList(2)),Option(argsList(3)))/*argsList(0)*/)
