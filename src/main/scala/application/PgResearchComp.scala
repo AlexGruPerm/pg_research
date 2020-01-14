@@ -2,7 +2,7 @@ package application
 
 import java.util.concurrent.TimeUnit
 
-import JsonsComp.JsonsCompare
+import JsonsComp.{JsonsCompare, OneFileTests}
 import zio.clock.Clock
 import zio.console.{Console, putStrLn}
 import zio.{Task, ZIO, clock}
@@ -27,7 +27,13 @@ object PgResearchComp {
       _ <- putStrLn(s"(1) ${resSummaryOfComp.f1name} resSummaryOfComp = ${resSummaryOfComp.f1}")
       _ <- putStrLn(s"(2) ${resSummaryOfComp.f2name} resSummaryOfComp = ${resSummaryOfComp.f2}")
       _ <- putStrLn(s"Common (jsons read-parse) duration $durationMs ms.")
-      saveResStatus <- JsonsCompare.saveResIntoFile(resSummaryOfComp)
+      f1 <- resSummaryOfComp.f1
+      f2 <- resSummaryOfComp.f2
+      saveResStatus <- JsonsCompare.saveResIntoFile(
+        resSummaryOfComp.f1name,
+        f1,
+        resSummaryOfComp.f2name,
+        f2)
       _ <- putStrLn(s"result saved into file $saveResStatus.!!!")
       _ <- putStrLn(s"-----------------------------")
     } yield 1

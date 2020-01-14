@@ -65,10 +65,13 @@ object JsonsCompare extends TimestampConverter {
   /**
    *  Save results into output files.
    */
-  val saveResIntoFile : SummaryOfComp => Task[String] = summComp =>
-    for {
+  val saveResIntoFile: (String, OneFileTests, String, OneFileTests) => Task[String] = (f1name,
+                                                                                       f1,
+                                                                                       f2name,
+                                                                                       f2) => for
+    {
       fn <- Task(TsToString(System.currentTimeMillis()))
-      strExcel <- saveResIntoExcelFile(fn.toString, summComp)
+      strExcel <- saveResIntoExcelFile(fn.toString, f1name, f1, f2name, f2)
     } yield strExcel
 
 
@@ -87,7 +90,34 @@ object JsonsCompare extends TimestampConverter {
    *  https://www.programcreek.com/java-api-examples/?class=org.apache.poi.ss.usermodel.CellStyle&method=setFillPattern
    *
    */
-  private val saveResIntoExcelFile : (String,SummaryOfComp) => Task[String] = (fn,summComp) => {
+  private val saveResIntoExcelFile : (String,String, OneFileTests, String, OneFileTests) => Task[String] =
+    (fn, f1name, f1, f2name, f2) => {
+    val xlsFileName :String = fn+".xls"
+    val wb = new XSSFWorkbook()
+    val sheet = wb.createSheet(s"Data")
+    val headerRow = sheet.createRow(0)
+    headerRow.createCell(0).setCellValue("Description")
+    headerRow.createCell(1).setCellValue("1")
+    headerRow.createCell(2).setCellValue("2")
+    val row1 = sheet.createRow(1)
+    row1.createCell(0).setCellValue("File name")
+    row1.createCell(1).setCellValue(Paths.get(f1name).getFileName.toString)
+    row1.createCell(2).setCellValue(Paths.get(f2name).getFileName.toString)
+
+      val row2 = sheet.createRow(2)
+      row2.createCell(0).setCellValue("Mode")
+      row2.createCell(1).setCellValue(f1.runType)
+      row2.createCell(2).setCellValue(f2.runType)
+
+    sheet.setDefaultColumnWidth(40)
+    val resultFile = new FileOutputStream(xlsFileName)
+    wb.write(resultFile)
+    resultFile.close
+
+    Task(xlsFileName)
+  }
+
+/*
     val xlsFileName :String = fn+".xls"
 
     val wb = new XSSFWorkbook()
@@ -104,12 +134,18 @@ object JsonsCompare extends TimestampConverter {
     row1.createCell(1).setCellValue(Paths.get(summComp.f1name).getFileName.toString)
     row1.createCell(2).setCellValue(Paths.get(summComp.f2name).getFileName.toString)
 
-    /*
     val row2 = sheet.createRow(2)
     row2.createCell(0).setCellValue("Mode")
-    row2.createCell(1).setCellValue(summComp.f1.map(_.runType).toString)
-    row2.createCell(2).setCellValue(summComp.f2.map(_.runType).toString)
+    */
 
+    /*
+        val row2 = sheet.createRow(2)
+    row2.createCell(0).setCellValue("Mode")
+    val t :Int = summComp.f1.map(_.runType)
+    row2.createCell(1).setCellValue(summComp.f1.map(_.runType))
+    row2.createCell(2).setCellValue(summComp.f2.map(_.runType))
+    */
+  /*
     val row3 = sheet.createRow(3)
     row3.createCell(0).setCellValue("Distinct PIDs")
     row3.createCell(1).setCellValue(summComp.f1.map(_.cntDistPids).toString)
@@ -223,7 +259,7 @@ object JsonsCompare extends TimestampConverter {
       }
     }
     */
-
+/*
     sheet.setDefaultColumnWidth(40)
     val resultFile = new FileOutputStream(xlsFileName)
     wb.write(resultFile)
@@ -231,5 +267,6 @@ object JsonsCompare extends TimestampConverter {
 
     Task(xlsFileName)
   }
+  */
 
 }
