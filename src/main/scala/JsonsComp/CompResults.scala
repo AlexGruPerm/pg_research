@@ -7,7 +7,6 @@ import zio.Task
 /**
  * Case class for result of one test execution.
 */
-//@JsonCodec
 case class IterTestSingleRes(
                               iterNum: Int,
                               pid: Long,
@@ -26,10 +25,7 @@ case class IterTestSingleRes(
 /**
  * All iterations and all tests results. One input file.
 */
-//@JsonCodec
 case class OneFileTests(
-                        //filenum: Int,
-                        //filename: String,
                         runType: String,
                         cntDistPids: Int,
                         CommonDurMs: Long,

@@ -27,7 +27,7 @@ object PgResearchComp {
       _ <- putStrLn(s"(1) ${resSummaryOfComp.f1name} resSummaryOfComp = ${resSummaryOfComp.f1}")
       _ <- putStrLn(s"(2) ${resSummaryOfComp.f2name} resSummaryOfComp = ${resSummaryOfComp.f2}")
       _ <- putStrLn(s"Common (jsons read-parse) duration $durationMs ms.")
-      saveResStatus <- JsonsCompare.saveResIntoFiles(resSummaryOfComp)
+      saveResStatus <- JsonsCompare.saveResIntoFile(resSummaryOfComp)
       _ <- putStrLn(s"result saved into file $saveResStatus.!!!")
       _ <- putStrLn(s"-----------------------------")
     } yield 1
