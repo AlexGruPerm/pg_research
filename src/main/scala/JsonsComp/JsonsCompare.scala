@@ -92,65 +92,59 @@ object JsonsCompare extends TimestampConverter {
    */
   private val saveResIntoExcelFile : (String,String, OneFileTests, String, OneFileTests) => Task[String] =
     (fn, f1name, f1, f2name, f2) => {
-    val xlsFileName :String = fn+".xls"
-    val wb = new XSSFWorkbook()
-    val sheet = wb.createSheet(s"Data")
-    val headerRow = sheet.createRow(0)
-    headerRow.createCell(0).setCellValue("Description")
-    headerRow.createCell(1).setCellValue("1")
-    headerRow.createCell(2).setCellValue("2")
-    val row1 = sheet.createRow(1)
-    row1.createCell(0).setCellValue("File name")
-    row1.createCell(1).setCellValue(Paths.get(f1name).getFileName.toString)
-    row1.createCell(2).setCellValue(Paths.get(f2name).getFileName.toString)
+      val xlsFileName: String = fn + ".xls"
+      val wb = new XSSFWorkbook()
+      val sheet = wb.createSheet(s"Data")
+      val headerRow = sheet.createRow(0)
+      headerRow.createCell(0).setCellValue("Description")
+      headerRow.createCell(1).setCellValue("1")
+      headerRow.createCell(2).setCellValue("2")
+      val row1 = sheet.createRow(1)
+      row1.createCell(0).setCellValue("File name")
+      row1.createCell(1).setCellValue(Paths.get(f1name).getFileName.toString)
+      row1.createCell(2).setCellValue(Paths.get(f2name).getFileName.toString)
 
       val row2 = sheet.createRow(2)
       row2.createCell(0).setCellValue("Mode")
       row2.createCell(1).setCellValue(f1.runType)
       row2.createCell(2).setCellValue(f2.runType)
 
-    sheet.setDefaultColumnWidth(40)
-    val resultFile = new FileOutputStream(xlsFileName)
-    wb.write(resultFile)
-    resultFile.close
+      val row3 = sheet.createRow(3)
+      row3.createCell(0).setCellValue("Distinct PIDs")
+      row3.createCell(1).setCellValue(f1.cntDistPids)
+      row3.createCell(2).setCellValue(f2.cntDistPids)
 
-    Task(xlsFileName)
+      val row4 = sheet.createRow(4)
+      row4.createCell(0).setCellValue("CommonDurMs (external coverage tEnd - tBegin)")
+      row4.createCell(1).setCellValue(f1.CommonDurMs)
+      row4.createCell(2).setCellValue(f2.CommonDurMs)
+
+      val row5 = sheet.createRow(5)
+      row5.createCell(0).setCellValue("sumExecDurMs (sum of each call execution)")
+      row5.createCell(1).setCellValue(f1.sumExecDurMs)
+      row5.createCell(2).setCellValue(f2.sumExecDurMs)
+
+      val row6 = sheet.createRow(6)
+      row6.createCell(0).setCellValue("sumFetchDurMs (sum of each call fetching)")
+      row6.createCell(1).setCellValue(f1.sumFetchDurMs)
+      row6.createCell(2).setCellValue(f2.sumFetchDurMs)
+
+      val row7 = sheet.createRow(7)
+      row7.createCell(0).setCellValue("sumTotalDurMs (sum of each call exec + fetch)")
+      row7.createCell(1).setCellValue(f1.sumTotalDurMs)
+      row7.createCell(2).setCellValue(f2.sumTotalDurMs)
+
+      sheet.setDefaultColumnWidth(50)
+      val resultFile = new FileOutputStream(xlsFileName)
+      wb.write(resultFile)
+      resultFile.close
+
+      Task(xlsFileName)
   }
 
-/*
-    val xlsFileName :String = fn+".xls"
 
-    val wb = new XSSFWorkbook()
 
-    val sheet = wb.createSheet(s"Data")
-    val headerRow = sheet.createRow(0)
 
-    headerRow.createCell(0).setCellValue("Description")
-    headerRow.createCell(1).setCellValue("1")
-    headerRow.createCell(2).setCellValue("2")
-
-    val row1 = sheet.createRow(1)
-    row1.createCell(0).setCellValue("File name")
-    row1.createCell(1).setCellValue(Paths.get(summComp.f1name).getFileName.toString)
-    row1.createCell(2).setCellValue(Paths.get(summComp.f2name).getFileName.toString)
-
-    val row2 = sheet.createRow(2)
-    row2.createCell(0).setCellValue("Mode")
-    */
-
-    /*
-        val row2 = sheet.createRow(2)
-    row2.createCell(0).setCellValue("Mode")
-    val t :Int = summComp.f1.map(_.runType)
-    row2.createCell(1).setCellValue(summComp.f1.map(_.runType))
-    row2.createCell(2).setCellValue(summComp.f2.map(_.runType))
-    */
-  /*
-    val row3 = sheet.createRow(3)
-    row3.createCell(0).setCellValue("Distinct PIDs")
-    row3.createCell(1).setCellValue(summComp.f1.map(_.cntDistPids).toString)
-    row3.createCell(2).setCellValue(summComp.f2.map(_.cntDistPids).toString)
-    */
 
 
   /*
@@ -170,23 +164,7 @@ object JsonsCompare extends TimestampConverter {
     Task.collectAll(seqRes)//{x => x}.map(_.flatten)
 */
 
-    /*
-    val r = for {
-      sc1 <- summComp.f1
-      sc2 <- summComp.f2
 
-      row2 = sheet.createRow(2)
-      _ = row2.createCell(0).setCellValue("Mode")
-      _ = row2.createCell(1).setCellValue(sc1.runType.toString)
-      _ = row2.createCell(2).setCellValue(sc2.runType.toString)
-
-      row3 = sheet.createRow(3)
-      _ = row3.createCell(0).setCellValue("Distinct PIDs")
-      _ = row3.createCell(1).setCellValue(sc1.cntDistPids.toString)
-      _ = row3.createCell(2).setCellValue(sc2.cntDistPids.toString)
-
-    } yield 1
-    */
 
 
     /*

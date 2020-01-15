@@ -4,6 +4,9 @@ import io.circe._
 import io.circe.generic.semiauto._
 import zio.Task
 
+
+
+
 /**
  * Case class for result of one test execution.
 */
