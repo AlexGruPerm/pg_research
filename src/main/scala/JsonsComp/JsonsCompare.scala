@@ -5,7 +5,8 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
 
 import io.circe.parser._
-import org.apache.poi.xssf.usermodel.XSSFWorkbook
+import org.apache.poi.ss.usermodel.{FillPatternType, HorizontalAlignment, IndexedColors, Row}
+import org.apache.poi.xssf.usermodel.{XSSFCellStyle, XSSFWorkbook}
 import saveresults.TimestampConverter
 import zio.clock.Clock
 import zio.console.{Console, putStrLn}
@@ -84,6 +85,12 @@ object JsonsCompare extends TimestampConverter {
   }
 
 
+  private def createCell(r: Row, colIndex :Int, cellStyle :XSSFCellStyle, cellValue :String) :Unit ={
+    val c = r.createCell(colIndex)
+    c.setCellStyle(cellStyle)
+    c.setCellValue(cellValue)
+  }
+
   /**
    *  Save results into output Excel and return it's name.
    *  https://www.programcreek.com/java-api-examples/?class=org.apache.poi.ss.usermodel.Font&method=setColor
@@ -99,10 +106,12 @@ object JsonsCompare extends TimestampConverter {
       headerRow.createCell(0).setCellValue("Description")
       headerRow.createCell(1).setCellValue("1")
       headerRow.createCell(2).setCellValue("2")
+
       val row1 = sheet.createRow(1)
       row1.createCell(0).setCellValue("File name")
       row1.createCell(1).setCellValue(Paths.get(f1name).getFileName.toString)
       row1.createCell(2).setCellValue(Paths.get(f2name).getFileName.toString)
+      row1.createCell(3).setCellValue("Diff percents (1 to 2)")
 
       val row2 = sheet.createRow(2)
       row2.createCell(0).setCellValue("Mode")
@@ -114,27 +123,99 @@ object JsonsCompare extends TimestampConverter {
       row3.createCell(1).setCellValue(f1.cntDistPids)
       row3.createCell(2).setCellValue(f2.cntDistPids)
 
+      val rStyle = wb.createCellStyle()
+      rStyle.setWrapText(true)
+
       val row4 = sheet.createRow(4)
-      row4.createCell(0).setCellValue("CommonDurMs (external coverage tEnd - tBegin)")
+      val r4c = row4.createCell(0)
+      r4c.setCellValue("CommonDurMs (external coverage tEnd - tBegin)")
+      r4c.setCellStyle(rStyle)
       row4.createCell(1).setCellValue(f1.CommonDurMs)
       row4.createCell(2).setCellValue(f2.CommonDurMs)
+      row4.createCell(3).setCellValue(100-((f1.CommonDurMs.toDouble/f2.CommonDurMs.toDouble)*100).round)
 
       val row5 = sheet.createRow(5)
-      row5.createCell(0).setCellValue("sumExecDurMs (sum of each call execution)")
+      val r5c = row5.createCell(0)
+      r5c.setCellValue("sumExecDurMs (sum of each call execution)")
+      r5c.setCellStyle(rStyle)
       row5.createCell(1).setCellValue(f1.sumExecDurMs)
       row5.createCell(2).setCellValue(f2.sumExecDurMs)
+      row5.createCell(3).setCellValue(100-((f1.sumExecDurMs.toDouble/f2.sumExecDurMs.toDouble)*100).round)
 
       val row6 = sheet.createRow(6)
-      row6.createCell(0).setCellValue("sumFetchDurMs (sum of each call fetching)")
+      val r6c = row6.createCell(0)
+      r6c.setCellValue("sumFetchDurMs (sum of each call fetching)")
+      r6c.setCellStyle(rStyle)
       row6.createCell(1).setCellValue(f1.sumFetchDurMs)
       row6.createCell(2).setCellValue(f2.sumFetchDurMs)
+      row6.createCell(3).setCellValue(100-((f1.sumFetchDurMs.toDouble/f2.sumFetchDurMs.toDouble)*100).round)
 
       val row7 = sheet.createRow(7)
-      row7.createCell(0).setCellValue("sumTotalDurMs (sum of each call exec + fetch)")
+      val r7c = row7.createCell(0)
+      r7c.setCellValue("sumTotalDurMs (sum of each call exec + fetch)")
+      r7c.setCellStyle(rStyle)
       row7.createCell(1).setCellValue(f1.sumTotalDurMs)
       row7.createCell(2).setCellValue(f2.sumTotalDurMs)
+      row7.createCell(3).setCellValue(100-((f1.sumTotalDurMs.toDouble/f2.sumTotalDurMs.toDouble)*100).round)
 
-      sheet.setDefaultColumnWidth(50)
+      val row8 = sheet.createRow(8)
+      row8.createCell(0).setCellValue("   ")
+
+      //detailed data.
+      //Header
+      val detailHeaderStyle = wb.createCellStyle
+      val detailHeaderFont = wb.createFont
+      detailHeaderFont.setBold(true)
+      detailHeaderFont.setFontName("Tahoma")
+      detailHeaderFont.setFontHeightInPoints(10)
+      detailHeaderStyle.setFont(detailHeaderFont)
+      detailHeaderStyle.setAlignment(HorizontalAlignment.CENTER)
+      detailHeaderStyle.setFillForegroundColor(IndexedColors.LIGHT_GREEN.getIndex)
+      detailHeaderStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND)
+
+      val row9 = sheet.createRow(9)
+      createCell(row9,0,detailHeaderStyle,"Iteration")
+      createCell(row9,1,detailHeaderStyle,"Test Number")
+      createCell(row9,2,detailHeaderStyle,"Test Name")
+      createCell(row9,3,detailHeaderStyle,"Proc Name")
+      createCell(row9,4,detailHeaderStyle,s"PID (1) ${f1.runType}")
+      createCell(row9,5,detailHeaderStyle,s"PID (2) ${f2.runType}")
+
+      //ExecTime
+      createCell(row9,6,detailHeaderStyle,s"TotalTime (1) ${f1.runType}")
+      createCell(row9,7,detailHeaderStyle,s"TotalTime (2) ${f2.runType}")
+      createCell(row9,8,detailHeaderStyle,"TotalTime Prcnt (1 to 2)")
+
+      f1.test_results.zipWithIndex.foreach{
+        case (res,rn) => {
+          val r = sheet.createRow(10+rn)
+          val f2res :Option[IterTestSingleRes] = f2.test_results.find(itr => itr.iterNum==res.iterNum && itr.procName==res.procName)
+          r.createCell(0).setCellValue(res.iterNum)
+          r.createCell(1).setCellValue(res.testNum)
+          r.createCell(2).setCellValue(res.testName)
+          r.createCell(3).setCellValue(res.procName)
+          r.createCell(4).setCellValue(res.pid)
+          r.createCell(5).setCellValue(f2res match {case Some(r) => r.pid case None => 0})
+          r.createCell(6).setCellValue(res.durTotalMs)
+          r.createCell(7).setCellValue(f2res match {case Some(r) => r.durTotalMs case None => 0.0})
+          r.createCell(8).setCellValue(f2res match {
+            case Some(r2) => (100.0-((res.durTotalMs.toDouble/r2.durTotalMs.toDouble)*100).round)
+            case None => 0.0
+          })
+        }
+      }
+
+      /*
+row9.createCell(9).setCellValue("")
+row9.createCell(10).setCellValue("")
+row9.createCell(11).setCellValue("")
+
+row9.createCell(12).setCellValue("")
+row9.createCell(13).setCellValue("")
+row9.createCell(14).setCellValue("")
+*/
+
+      sheet.setDefaultColumnWidth(20)
       val resultFile = new FileOutputStream(xlsFileName)
       wb.write(resultFile)
       resultFile.close
