@@ -41,16 +41,16 @@ object PgResearch extends App {
     if (argsList.length == 0) {
     //todo: don't forget replace succeed with fail.
       //if (argsList(0)=="run") {
-//Task.succeed(CmdLineParams("run", Some("C:\\pg_research\\src\\main\\resources\\loadconf.json"), None, None))
+Task.succeed(CmdLineParams("run", Some("C:\\pg_research\\src\\main\\resources\\loadconf.json"), None, None))
       /*} else if (argsList(0)=="comp"){
         Task.succeed(CmdLineParams("comp", None, Some(""), Some("")))
       }
       */
-
+/*
       Task.succeed(CmdLineParams("comp", None,
         Some("C:\\pg_research\\16_01_2020_12_32_14.json"),
         Some("C:\\pg_research\\16_01_2020_12_32_59.json")))
-
+*/
     }
     else
       Task.succeed(CmdLineParams(argsList(0),Option(argsList(1)),Option(argsList(2)),Option(argsList(3)))/*argsList(0)*/)

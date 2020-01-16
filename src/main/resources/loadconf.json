@@ -16,8 +16,8 @@
     "qtimeoutms" : "Global timeout in milliseconds that will be used for each query. Useless."
   },
   "runprops": {
-    "runAs" : "seq",
-    "repeat" : 1,
+    "runAs" : "seqpar",
+    "repeat" : 30,
     "qtimeoutms" : 500
   },
   "items": [
