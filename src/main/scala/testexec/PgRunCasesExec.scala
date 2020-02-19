@@ -46,7 +46,7 @@ object PgRunCasesExec {
         iteration =>
           scala.util.Random.shuffle(sqLoadConf).map(lc => (iteration, lc))
       )) { thisIterationLc =>
-          (new PgConnection).sess(thisIterationLc._1, dbConProps).flatMap(
+        (new PgConnection).sess(thisIterationLc._1, dbConProps).flatMap(
           thisSess =>
             PgTestExecuter.exec(thisIterationLc._1, thisSess, thisIterationLc._2)
         )
@@ -55,7 +55,8 @@ object PgRunCasesExec {
   private val parSeqExec: (PgRunProp, PgConnectProp, Seq[PgLoadConf]) => Task[Seq[PgTestResult]] =
     (runProperties, dbConProps, sqLoadConf) =>
       Task.foreachPar(1 to runProperties.repeat){
-        iteration => (new PgConnection).sess(iteration,dbConProps).flatMap(thisSess =>
+        iteration => (new PgConnection).sess(iteration,dbConProps).flatMap(
+          thisSess =>
           Task.foreach(sqLoadConf.sortBy(_.testNum).reverse){lc =>
             PgTestExecuter.exec(iteration, thisSess, lc)}
         )

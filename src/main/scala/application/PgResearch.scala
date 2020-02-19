@@ -37,20 +37,24 @@ object PgResearch extends App {
    * Get application input parameters and return Task[String] with input filename or fail
    * with Exception.
    */
+  /**
+   * DC   172.17.100.53
+   * LXC  10.241.5.234
+   */
   private val getInputParamFileName: List[String] => Task[CmdLineParams] = argsList =>
     if (argsList.length == 0) {
     //todo: don't forget replace succeed with fail.
       //if (argsList(0)=="run") {
-Task.succeed(CmdLineParams("run", Some("C:\\pg_research\\src\\main\\resources\\loadconf.json"), None, None))
+//Task.succeed(CmdLineParams("run", Some("C:\\pg_research\\src\\main\\resources\\loadconf.json"), None, None))
       /*} else if (argsList(0)=="comp"){
         Task.succeed(CmdLineParams("comp", None, Some(""), Some("")))
       }
       */
-/*
+
       Task.succeed(CmdLineParams("comp", None,
-        Some("C:\\pg_research\\16_01_2020_12_32_14.json"),
-        Some("C:\\pg_research\\16_01_2020_12_32_59.json")))
-*/
+        Some("C:\\pg_research\\23_01_2020_14_52_16.json"),
+        Some("C:\\pg_research\\23_01_2020_14_54_06.json")))
+
     }
     else
       Task.succeed(CmdLineParams(argsList(0),Option(argsList(1)),Option(argsList(2)),Option(argsList(3)))/*argsList(0)*/)
